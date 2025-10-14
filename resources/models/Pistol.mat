@@ -1,7 +1,4 @@
-# Blender MTL File: 'Pistol_02.blend'
-# Material Count: 3
-
-newmtl Black_Pistol02
+newmtl PistolBlack
 Ns 323.999994
 Ka 1.000000 1.000000 1.000000
 Kd 0.048172 0.048172 0.048172
@@ -11,7 +8,7 @@ Ni 1.450000
 d 1.000000
 illum 2
 
-newmtl Gray_Pistol02
+newmtl PistolGray
 Ns 225.000000
 Ka 1.000000 1.000000 1.000000
 Kd 0.132868 0.132868 0.132868
@@ -21,7 +18,7 @@ Ni 1.450000
 d 1.000000
 illum 2
 
-newmtl White_Pistol02
+newmtl PistolWhite
 Ns 225.000000
 Ka 1.000000 1.000000 1.000000
 Kd 0.775822 0.775822 0.775822

@@ -19,9 +19,13 @@ file(GLOB_RECURSE PROJECT_SOURCE
 
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCE})
 
-target_include_directories(${PROJECT_NAME} PRIVATE
-    ${CMAKE_SOURCE_DIR}/dependencies/Romeo/include
-    ${CMAKE_SOURCE_DIR}/include
+target_include_directories(${PROJECT_NAME} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
+
+target_compile_options(${PROJECT_NAME} PRIVATE
+    -isystem${CMAKE_CURRENT_SOURCE_DIR}/dependencies/Romeo/include
 )
 
 target_compile_options(${PROJECT_NAME} PRIVATE

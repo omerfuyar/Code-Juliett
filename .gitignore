@@ -42,6 +42,7 @@ bld/
 [Ll]ogs/
 [Bb]uild/
 [Bb]uilds/
+CONOUT$
 
 # Zig files
 .zig-cache

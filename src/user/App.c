@@ -38,17 +38,15 @@ myObjectType myObj = {0};
 
 void App_Setup(int argc, char **argv)
 {
-    if (argc != 2)
-    {
-        DebugError("Incorrect use of app. Use one parameter to select .obj file.");
-    }
+    (void)argc;
+    (void)argv;
 
     mainWindow = Context_Initialize();
 
     Context_Configure(scl("Juliette"), TEST_WINDOW_SIZE, TEST_VSYNC, TEST_FULL_SCREEN, NULL);
 
     Input_Initialize(mainWindow);
-    Renderer_Initialize(mainWindow);
+    Renderer_Initialize(mainWindow, 1);
 
     ResourceText *vertexShaderResource = ResourceText_Create(scl("vertex.glsl"), scl("shaders" PATH_DELIMETER_STR));
     ResourceText *fragmentShaderResource = ResourceText_Create(scl("fragment.glsl"), scl("shaders" PATH_DELIMETER_STR));
@@ -56,11 +54,17 @@ void App_Setup(int argc, char **argv)
     ResourceText_Destroy(vertexShaderResource);
     ResourceText_Destroy(fragmentShaderResource);
 
-    ResourceText *objResource = ResourceText_Create(scl(argv[1]), scl("models" PATH_DELIMETER_STR));
-    RendererModel *objModel = RendererModel_CreateOBJ(scl("Object Model"), scv(objResource->data), objResource->lineCount, scv(objResource->path), NewVector3N(0.0f), NewVector3N(0.0f), NewVector3N(1.0f));
-    ResourceText_Destroy(objResource);
+    ResourceText *pistolMatFile = ResourceText_Create(scl("Pistol.mat"), scl("models" PATH_DELIMETER_STR));
+    ListArray pistolMaterials = RendererMaterial_CreateFile(scv(pistolMatFile->data), pistolMatFile->lineCount);
+    ResourceText_Destroy(pistolMatFile);
+
+    ResourceText *mdlFile = ResourceText_Create(scl("Pistol.mdl"), scl("models" PATH_DELIMETER_STR));
+    RendererModel *mdlPistol = RendererModel_Create(scl("Pistol"), scv(mdlFile->data), mdlFile->lineCount, &pistolMaterials, NewVector3N(0.0f), NewVector3N(0.0f), NewVector3N(1.0f));
+    ResourceText_Destroy(mdlFile);
+    ListArray_Destroy(&pistolMaterials);
+
     myRendererScene = RendererScene_Create(scl("My Scene"), 1);
-    RendererBatch *objBatch = RendererScene_CreateBatch(myRendererScene, scl("Object Batch"), objModel, 1);
+    RendererBatch *btcPistol = RendererScene_CreateBatch(myRendererScene, scl("Object Batch"), mdlPistol, 1);
 
     mainCamera.name = scc(scl("Main Camera"));
     mainCamera.position = Vector3_Zero;
@@ -75,7 +79,7 @@ void App_Setup(int argc, char **argv)
     myObj.position = NewVector3N(0.0f);
     myObj.rotation = NewVector3N(0.0f);
     myObj.scale = NewVector3N(1.0f);
-    myObj.renderable = RendererBatch_CreateComponent(objBatch, &myObj.position, &myObj.rotation, &myObj.scale);
+    myObj.renderable = RendererBatch_CreateComponent(btcPistol, &myObj.position, &myObj.rotation, &myObj.scale);
 }
 
 void App_Loop(float deltaTime)
@@ -86,7 +90,7 @@ void App_Loop(float deltaTime)
         Context_ConfigureFullScreen(!mainWindow->fullScreen);
     }
 
-    mainCamera.camera->size -= Input_GetMouseButtonScroll();
+    mainCamera.camera->size -= Input_GetMouseScroll();
 
     if (Input_GetMouseButton(InputMouseButtonCode_Left, InputState_Pressed))
     {
@@ -126,13 +130,18 @@ void App_Loop(float deltaTime)
         myObj.position.z -= movementVector.y * deltaTime * mainCamera.speed;
     }
 
-    // user check collisions
+    // PhysicsScene_UpdateComponents(myPhysicsScene, DT);
+    // PhysicsScene_ResolveCollisions(myPhysicsScene);
+
     RendererScene_Update(myRendererScene);
 
     // rendering
     Renderer_StartRendering();
     Renderer_RenderScene(myRendererScene);
 
+    // RendererDebug_StartRendering();
+
+    // RendererDebug_FinishRendering(&mainCamera.camera->projectionMatrix, &mainCamera.camera->viewMatrix);
     Renderer_FinishRendering();
 
     char titleBuffer[TEMP_BUFFER_SIZE];
@@ -146,5 +155,6 @@ void App_Terminate(int exitCode, char *exitMessage)
     (void)exitMessage;
 
     Renderer_Terminate();
+    // RendererDebug_Terminate();
     Context_Terminate();
 }
