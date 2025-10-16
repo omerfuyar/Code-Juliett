@@ -54,12 +54,12 @@ void App_Setup(int argc, char **argv)
     ResourceText_Destroy(vertexShaderResource);
     ResourceText_Destroy(fragmentShaderResource);
 
-    ResourceText *pistolMatFile = ResourceText_Create(scl("Pistol.mat"), scl("models" PATH_DELIMETER_STR));
+    ResourceText *pistolMatFile = ResourceText_Create(scl("Test.mat"), scl("models" PATH_DELIMETER_STR));
     ListArray pistolMaterials = RendererMaterial_CreateFile(scv(pistolMatFile->data), pistolMatFile->lineCount);
     ResourceText_Destroy(pistolMatFile);
 
-    ResourceText *mdlFile = ResourceText_Create(scl("Pistol.mdl"), scl("models" PATH_DELIMETER_STR));
-    RendererModel *mdlPistol = RendererModel_Create(scl("Pistol"), scv(mdlFile->data), mdlFile->lineCount, &pistolMaterials, NewVector3N(0.0f), NewVector3N(0.0f), NewVector3N(1.0f));
+    ResourceText *mdlFile = ResourceText_Create(scl("Test.mdl"), scl("models" PATH_DELIMETER_STR));
+    RendererModel *mdlPistol = RendererModel_Create(scl("Test"), scv(mdlFile->data), mdlFile->lineCount, &pistolMaterials, NewVector3N(0.0f), NewVector3N(0.0f), NewVector3N(1.0f));
     ResourceText_Destroy(mdlFile);
     ListArray_Destroy(&pistolMaterials);
 
@@ -120,15 +120,15 @@ void App_Loop(float deltaTime)
             mainCamera.position = Vector3_Add(mainCamera.position, Vector3_Scale(move, mainCamera.speed * deltaTime));
         }
     }
-    else
-    {
-        Input_ConfigureMouseMode(InputMouseMode_Normal);
-
-        Vector3 movementVector = Input_GetMovementVector();
-
-        myObj.position.x += movementVector.x * deltaTime * mainCamera.speed;
-        myObj.position.z -= movementVector.y * deltaTime * mainCamera.speed;
-    }
+    // else
+    //{
+    //     Input_ConfigureMouseMode(InputMouseMode_Normal);
+    //
+    //    Vector3 movementVector = Input_GetMovementVector();
+    //
+    //    myObj.position.x += movementVector.x * deltaTime * mainCamera.speed;
+    //    myObj.position.z -= movementVector.y * deltaTime * mainCamera.speed;
+    //}
 
     // PhysicsScene_UpdateComponents(myPhysicsScene, DT);
     // PhysicsScene_ResolveCollisions(myPhysicsScene);
