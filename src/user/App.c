@@ -171,11 +171,13 @@ void App_Loop(float deltaTime)
 
     if (benchTimer >= TEST_BENCH_TIME_SECONDS)
     {
-        DebugError(
-            "BenchMark Time : %f seconds | Average FPS : %f | Full Screen : %s",
-            benchTimer,
-            (float)benchFrameCount / TEST_BENCH_TIME_SECONDS,
-            TEST_FULL_SCREEN ? "true" : "false");
+        char messageBuffer[TEMP_BUFFER_SIZE];
+        snprintf(messageBuffer, sizeof(messageBuffer), "BenchMark Time : %f seconds | Average FPS : %f | Full Screen : %s",
+                 benchTimer,
+                 (float)benchFrameCount / TEST_BENCH_TIME_SECONDS,
+                 TEST_FULL_SCREEN ? "true" : "false");
+
+        Global_Terminate(0, messageBuffer);
     }
 #endif
 }
