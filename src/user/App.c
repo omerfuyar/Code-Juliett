@@ -36,6 +36,20 @@ RendererScene *myRendererScene = NULL;
 myCameraType mainCamera = {0};
 myObjectType myObj = {0};
 
+RendererModel *LoadModel(StringView name, StringView matFileName, StringView mdlFileName)
+{
+    ResourceText *matFile = ResourceText_Create(matFileName, scl("models" PATH_DELIMETER_STR));
+    ListArray materials = RendererMaterial_CreateFile(scv(matFile->data), matFile->lineCount);
+    ResourceText_Destroy(matFile);
+
+    ResourceText *mdlFile = ResourceText_Create(mdlFileName, scl("models" PATH_DELIMETER_STR));
+    RendererModel *model = RendererModel_Create(name, scv(mdlFile->data), mdlFile->lineCount, &materials, NewVector3N(100.0f), NewVector3N(0.0f), NewVector3N(1.0f));
+    ResourceText_Destroy(mdlFile);
+    ListArray_Destroy(&materials);
+
+    return model;
+}
+
 void App_Setup(int argc, char **argv)
 {
     (void)argc;
@@ -54,32 +68,29 @@ void App_Setup(int argc, char **argv)
     ResourceText_Destroy(vertexShaderResource);
     ResourceText_Destroy(fragmentShaderResource);
 
-    ResourceText *pistolMatFile = ResourceText_Create(scl("Test.mat"), scl("models" PATH_DELIMETER_STR));
-    ListArray pistolMaterials = RendererMaterial_CreateFile(scv(pistolMatFile->data), pistolMatFile->lineCount);
-    ResourceText_Destroy(pistolMatFile);
-
-    ResourceText *mdlFile = ResourceText_Create(scl("Test.mdl"), scl("models" PATH_DELIMETER_STR));
-    RendererModel *mdlPistol = RendererModel_Create(scl("Test"), scv(mdlFile->data), mdlFile->lineCount, &pistolMaterials, NewVector3N(0.0f), NewVector3N(0.0f), NewVector3N(1.0f));
-    ResourceText_Destroy(mdlFile);
-    ListArray_Destroy(&pistolMaterials);
+    RendererModel *myModel = LoadModel(scl("Test"), scl("Test.mat"), scl("Test.mdl"));
 
     myRendererScene = RendererScene_Create(scl("My Scene"), 1);
-    RendererBatch *btcPistol = RendererScene_CreateBatch(myRendererScene, scl("Object Batch"), mdlPistol, 1);
+    RendererBatch *myBatch = RendererScene_CreateBatch(myRendererScene, scl("Object Batch"), myModel, 1);
 
     mainCamera.name = scc(scl("Main Camera"));
-    mainCamera.position = Vector3_Zero;
+    mainCamera.position = NewVector3(-3.0f, 0.0f, 0.0f);
     mainCamera.rotation = Vector3_Zero;
-    mainCamera.camera = RendererCameraComponent_Create(&mainCamera.position, &mainCamera.rotation);
     mainCamera.speed = 10.0f;
     mainCamera.rotationSpeed = 75.0f;
-    RendererCameraComponent_Configure(mainCamera.camera, true, 90.0f, 0.1f, 1000.0f);
+    mainCamera.camera = RendererCameraComponent_Create(&mainCamera.position, &mainCamera.rotation);
+    mainCamera.camera->isPerspective = true;
+    mainCamera.camera->size = 90.0f;
+    mainCamera.camera->nearClipPlane = 0.1f;
+    mainCamera.camera->farClipPlane = 1000.0f;
+
     RendererScene_SetMainCamera(myRendererScene, mainCamera.camera);
 
-    myObj.name = scc(scl("Gun"));
+    myObj.name = scc(scl("My Object"));
     myObj.position = NewVector3N(0.0f);
     myObj.rotation = NewVector3N(0.0f);
     myObj.scale = NewVector3N(1.0f);
-    myObj.renderable = RendererBatch_CreateComponent(btcPistol, &myObj.position, &myObj.rotation, &myObj.scale);
+    myObj.renderable = RendererBatch_CreateComponent(myBatch, &myObj.position, &myObj.rotation, &myObj.scale);
 }
 
 void App_Loop(float deltaTime)
@@ -91,6 +102,8 @@ void App_Loop(float deltaTime)
     }
 
     mainCamera.camera->size -= Input_GetMouseScroll();
+
+    // myObj.rotation.y += deltaTime;
 
     if (Input_GetMouseButton(InputMouseButtonCode_Left, InputState_Pressed))
     {
@@ -120,15 +133,14 @@ void App_Loop(float deltaTime)
             mainCamera.position = Vector3_Add(mainCamera.position, Vector3_Scale(move, mainCamera.speed * deltaTime));
         }
     }
-    // else
-    //{
-    //     Input_ConfigureMouseMode(InputMouseMode_Normal);
-    //
-    //    Vector3 movementVector = Input_GetMovementVector();
-    //
-    //    myObj.position.x += movementVector.x * deltaTime * mainCamera.speed;
-    //    myObj.position.z -= movementVector.y * deltaTime * mainCamera.speed;
-    //}
+    else
+    {
+        Input_ConfigureMouseMode(InputMouseMode_Normal);
+
+        // Vector3 movementVector = Input_GetMovementVector();
+        // myObj.position.x += movementVector.x * deltaTime * mainCamera.speed;
+        // myObj.position.z -= movementVector.y * deltaTime * mainCamera.speed;
+    }
 
     // PhysicsScene_UpdateComponents(myPhysicsScene, DT);
     // PhysicsScene_ResolveCollisions(myPhysicsScene);
