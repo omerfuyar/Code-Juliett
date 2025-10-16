@@ -9,8 +9,13 @@
 #define TEST_BENCH_TIME_SECONDS 10.0f
 #define TEST_WINDOW_SIZE NewVector2Int(1080, 720)
 #define TEST_VSYNC false
-#define TEST_FULL_SCREEN false
-#define TEST_BENCHMARK false
+#define TEST_FULL_SCREEN true
+#define TEST_BENCHMARK true
+
+#if TEST_BENCHMARK
+float benchTimer = 0.0f;
+size_t benchFrameCount = 0;
+#endif
 
 typedef struct myObjectType
 {
@@ -103,7 +108,7 @@ void App_Loop(float deltaTime)
 
     mainCamera.camera->size -= Input_GetMouseScroll();
 
-    // myObj.rotation.y += deltaTime;
+    myObj.rotation.y += deltaTime;
 
     if (Input_GetMouseButton(InputMouseButtonCode_Left, InputState_Pressed))
     {
@@ -159,6 +164,20 @@ void App_Loop(float deltaTime)
     char titleBuffer[TEMP_BUFFER_SIZE];
     snprintf(titleBuffer, sizeof(titleBuffer), "%s | FPS: %f | Frame Time: %f ms", "Juliette", 1.0f / deltaTime, deltaTime * 1000);
     Context_ConfigureTitle(scl(titleBuffer));
+
+#if (TEST_BENCHMARK)
+    benchTimer += deltaTime;
+    benchFrameCount++;
+
+    if (benchTimer >= TEST_BENCH_TIME_SECONDS)
+    {
+        DebugError(
+            "BenchMark Time : %f seconds | Average FPS : %f | Full Screen : %s",
+            benchTimer,
+            (float)benchFrameCount / TEST_BENCH_TIME_SECONDS,
+            TEST_FULL_SCREEN ? "true" : "false");
+    }
+#endif
 }
 
 void App_Terminate(int exitCode, char *exitMessage)

@@ -43,6 +43,8 @@ bld/
 [Bb]uild/
 [Bb]uilds/
 CONOUT$
+buildD
+buildR
 
 # Zig files
 .zig-cache
