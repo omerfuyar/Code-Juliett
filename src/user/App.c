@@ -9,8 +9,8 @@
 #define TEST_BENCH_TIME_SECONDS 10.0f
 #define TEST_WINDOW_SIZE NewVector2Int(1080, 720)
 #define TEST_VSYNC false
-#define TEST_FULL_SCREEN true
-#define TEST_BENCHMARK true
+#define TEST_FULL_SCREEN false
+#define TEST_BENCHMARK false
 
 #if TEST_BENCHMARK
 float benchTimer = 0.0f;
