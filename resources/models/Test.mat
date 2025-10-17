@@ -1,9 +1,9 @@
-newmtl testMat
-Ns 323.999994 # Specular exponent
+newmtl testMat                # Material name 
+Ns 323.999994                 # Specular exponent
 Ka 1.000000 1.000000 1.000000 # Ambient color
-Kd 1.0 0.5 0.0 # Diffuse color
-Ks 0.500000 0.500000 0.500000 # Specular color
+Kd 1.0 0.5 0.0                # Diffuse color
+Ks 1.00000 1.00000 1.00000 # Specular color
 Ke 0.000000 0.000000 0.000000 # Emissive color
-Ni 1.450000 # Optical density
-d 1.00000 # Dissolve (transparency)
-illum 2 # Illumination model
+Ni 1.450000                   # Optical density
+d 1.00000                     # Dissolve (transparency)
+illum 2                       # Illumination model

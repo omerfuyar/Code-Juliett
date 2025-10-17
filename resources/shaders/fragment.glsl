@@ -13,6 +13,7 @@ uniform bool matHasDiffuseMap;
 uniform vec3 matAmbientColor;
 uniform vec3 matDiffuseColor;
 uniform vec3 matSpecularColor;
+uniform vec3 matEmissiveColor;
 uniform float matSpecularExponent;
 uniform float matDissolve;
 
@@ -44,18 +45,19 @@ void main()
     vec3 specular = spec * matSpecularColor;
     
     // Get base color from texture or material
-    vec3 baseColor;
+    vec4 baseColor;
     if (matHasDiffuseMap) {
-        baseColor = texture(matDiffuseMap, oVertUv).rgb;
+        baseColor = texture(matDiffuseMap, oVertUv);
     } else {
-        baseColor = matDiffuseColor;
+        baseColor = vec4(matDiffuseColor, 1.0);
     }
     
     // Combine all lighting components
-    vec3 result = (ambient + diffuse) * baseColor + specular;
+    vec3 result = (ambient + diffuse) * baseColor.rgb + specular;
     
     // Apply material opacity
-    FragColor = vec4(result, matDissolve);
+    float alpha = matHasDiffuseMap ? baseColor.a : matDissolve;
+    FragColor = vec4(result, alpha);
 
     // Display normals as colors (normalized from -1,1 to 0,1 range)
     //FragColor = vec4(normal * 0.5 + 0.5, 1.0);

@@ -1,6 +1,7 @@
 #include "user/App.h"
 
 #include "utilities/Maths.h"
+#include "utilities/Timer.h"
 
 #include "tools/Resources.h"
 #include "tools/Renderer.h"
@@ -10,7 +11,7 @@
 #define TEST_WINDOW_SIZE NewVector2Int(1080, 720)
 #define TEST_VSYNC false
 #define TEST_FULL_SCREEN false
-#define TEST_BENCHMARK false
+#define TEST_BENCHMARK true
 
 #if TEST_BENCHMARK
 float benchTimer = 0.0f;
@@ -44,8 +45,11 @@ myObjectType myObj = {0};
 RendererModel *LoadModel(StringView name, StringView matFileName, StringView mdlFileName)
 {
     ResourceText *matFile = ResourceText_Create(matFileName, scl("models" PATH_DELIMETER_STR));
-    ListArray materials = RendererMaterial_CreateFile(scv(matFile->data), matFile->lineCount);
+    ResourceImage *texture = ResourceImage_Create(scl("Test.png"), scl("models" PATH_DELIMETER_STR));
+    ListArray materials = RendererMaterial_CreateTexture(scv(matFile->data), matFile->lineCount, scl("Test"), texture->data, texture->size, texture->channels);
+    // ListArray materials = RendererMaterial_CreateFile(scv(matFile->data), matFile->lineCount);
     ResourceText_Destroy(matFile);
+    ResourceImage_Destroy(texture);
 
     ResourceText *mdlFile = ResourceText_Create(mdlFileName, scl("models" PATH_DELIMETER_STR));
     RendererModel *model = RendererModel_Create(name, scv(mdlFile->data), mdlFile->lineCount, &materials, NewVector3N(100.0f), NewVector3N(0.0f), NewVector3N(1.0f));
@@ -101,6 +105,7 @@ void App_Setup(int argc, char **argv)
 void App_Loop(float deltaTime)
 {
     Input_Update();
+
     if (Input_GetKey(InputKeyCode_F, InputState_Down))
     {
         Context_ConfigureFullScreen(!mainWindow->fullScreen);
