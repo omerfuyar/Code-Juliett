@@ -5,13 +5,17 @@
 
 #include "tools/Resources.h"
 #include "tools/Renderer.h"
+#include "tools/Physics.h"
 #include "tools/Input.h"
 
 #define TEST_BENCH_TIME_SECONDS 10.0f
 #define TEST_WINDOW_SIZE NewVector2Int(1080, 720)
 #define TEST_VSYNC false
 #define TEST_FULL_SCREEN false
-#define TEST_BENCHMARK true
+#define TEST_GRAVITY_M -GRAVITY_M * 10.0f
+#define TEST_DRAG 0.05f
+#define TEST_ELASTICITY 1.0f
+#define TEST_BENCHMARK false
 
 #if TEST_BENCHMARK
 float benchTimer = 0.0f;
@@ -20,11 +24,11 @@ size_t benchFrameCount = 0;
 
 typedef struct myObjectType
 {
-    String name;
     Vector3 position;
     Vector3 rotation;
     Vector3 scale;
     RendererComponent *renderable;
+    PhysicsComponent *physics;
 } myObjectType;
 
 typedef struct myCameraType
@@ -37,16 +41,19 @@ typedef struct myCameraType
     float speed;
 } myCameraType;
 
-ContextWindow *mainWindow = NULL;
-RendererScene *myRendererScene = NULL;
-myCameraType mainCamera = {0};
-myObjectType myObj = {0};
+ContextWindow *window = NULL;
+RendererScene *sceneRenderer = NULL;
+PhysicsScene *scenePhysics = NULL;
+myCameraType camera = {0};
+myObjectType objectPlayer = {0};
+myObjectType objectPlane = {0};
+char titleBuffer[TEMP_BUFFER_SIZE];
 
-RendererModel *LoadModel(StringView name, StringView matFileName, StringView mdlFileName)
+RendererModel *LoadModel(StringView name, StringView matFileName, StringView mdlFileName, StringView texFileName)
 {
     ResourceText *matFile = ResourceText_Create(matFileName, scl("models" PATH_DELIMETER_STR));
-    ResourceImage *texture = ResourceImage_Create(scl("Test.png"), scl("models" PATH_DELIMETER_STR));
-    ListArray materials = RendererMaterial_CreateTexture(scv(matFile->data), matFile->lineCount, scl("Test"), texture->data, texture->size, texture->channels);
+    ResourceImage *texture = ResourceImage_Create(texFileName, scl("models" PATH_DELIMETER_STR));
+    ListArray materials = RendererMaterial_CreateTexture(scv(matFile->data), matFile->lineCount, name, texture->data, texture->size, texture->channels);
     // ListArray materials = RendererMaterial_CreateFile(scv(matFile->data), matFile->lineCount);
     ResourceText_Destroy(matFile);
     ResourceImage_Destroy(texture);
@@ -64,42 +71,57 @@ void App_Setup(int argc, char **argv)
     (void)argc;
     (void)argv;
 
-    mainWindow = Context_Initialize();
+    window = Context_Initialize();
 
     Context_Configure(scl("Juliette"), TEST_WINDOW_SIZE, TEST_VSYNC, TEST_FULL_SCREEN, NULL);
 
-    Input_Initialize(mainWindow);
-    Renderer_Initialize(mainWindow, 1);
+    Input_Initialize(window);
+    Renderer_Initialize(window, 4);
 
-    ResourceText *vertexShaderResource = ResourceText_Create(scl("vertex.glsl"), scl("shaders" PATH_DELIMETER_STR));
-    ResourceText *fragmentShaderResource = ResourceText_Create(scl("fragment.glsl"), scl("shaders" PATH_DELIMETER_STR));
-    Renderer_ConfigureShaders(scv(vertexShaderResource->data), scv(fragmentShaderResource->data));
-    ResourceText_Destroy(vertexShaderResource);
-    ResourceText_Destroy(fragmentShaderResource);
+    ResourceText *rscDebugVertexShader = ResourceText_Create(scl("debugVertex.glsl"), scl("shaders" PATH_DELIMETER_STR));
+    ResourceText *rscDebugFragmentShader = ResourceText_Create(scl("debugFragment.glsl"), scl("shaders" PATH_DELIMETER_STR));
+    RendererDebug_Initialize(scv(rscDebugVertexShader->data), scv(rscDebugFragmentShader->data), 1024);
+    ResourceText_Destroy(rscDebugVertexShader);
+    ResourceText_Destroy(rscDebugFragmentShader);
 
-    RendererModel *myModel = LoadModel(scl("Test"), scl("Test.mat"), scl("Test.mdl"));
+    ResourceText *rscVertexShader = ResourceText_Create(scl("vertex.glsl"), scl("shaders" PATH_DELIMETER_STR));
+    ResourceText *rscFragmentShader = ResourceText_Create(scl("fragment.glsl"), scl("shaders" PATH_DELIMETER_STR));
+    Renderer_ConfigureShaders(scv(rscVertexShader->data), scv(rscFragmentShader->data));
+    ResourceText_Destroy(rscVertexShader);
+    ResourceText_Destroy(rscFragmentShader);
 
-    myRendererScene = RendererScene_Create(scl("My Scene"), 1);
-    RendererBatch *myBatch = RendererScene_CreateBatch(myRendererScene, scl("Object Batch"), myModel, 1);
+    RendererModel *modelPlayer = LoadModel(scl("Player"), scl("Player.mat"), scl("Player.mdl"), scl("Player.png"));
+    RendererModel *modelPlane = LoadModel(scl("Plane"), scl("Plane.mat"), scl("Plane.mdl"), scl("Plane.jpg"));
 
-    mainCamera.name = scc(scl("Main Camera"));
-    mainCamera.position = NewVector3(-3.0f, 0.0f, 0.0f);
-    mainCamera.rotation = Vector3_Zero;
-    mainCamera.speed = 10.0f;
-    mainCamera.rotationSpeed = 75.0f;
-    mainCamera.camera = RendererCameraComponent_Create(&mainCamera.position, &mainCamera.rotation);
-    mainCamera.camera->isPerspective = true;
-    mainCamera.camera->size = 90.0f;
-    mainCamera.camera->nearClipPlane = 0.1f;
-    mainCamera.camera->farClipPlane = 1000.0f;
+    sceneRenderer = RendererScene_Create(scl("My Renderer Scene"), 4);
+    RendererBatch *batchPlayer = RendererScene_CreateBatch(sceneRenderer, scl("Player Batch"), modelPlayer, 1);
+    RendererBatch *batchPlane = RendererScene_CreateBatch(sceneRenderer, scl("Plane Batch"), modelPlane, 1);
 
-    RendererScene_SetMainCamera(myRendererScene, mainCamera.camera);
+    camera.position = NewVector3(-3.0f, 0.0f, 0.0f);
+    camera.rotation = Vector3_Zero;
+    camera.speed = 10.0f;
+    camera.rotationSpeed = 75.0f;
+    camera.camera = RendererCameraComponent_Create(&camera.position, &camera.rotation);
+    camera.camera->isPerspective = true;
+    camera.camera->size = 90.0f;
+    camera.camera->nearClipPlane = 0.1f;
+    camera.camera->farClipPlane = 1000.0f;
 
-    myObj.name = scc(scl("My Object"));
-    myObj.position = NewVector3N(0.0f);
-    myObj.rotation = NewVector3N(0.0f);
-    myObj.scale = NewVector3N(1.0f);
-    myObj.renderable = RendererBatch_CreateComponent(myBatch, &myObj.position, &myObj.rotation, &myObj.scale);
+    RendererScene_SetMainCamera(sceneRenderer, camera.camera);
+
+    scenePhysics = PhysicsScene_Create(scl("My Physics Scene"), 2, TEST_DRAG, TEST_GRAVITY_M, TEST_ELASTICITY);
+
+    objectPlayer.position = Vector3_Zero;
+    objectPlayer.rotation = Vector3_Zero;
+    objectPlayer.scale = Vector3_One;
+    objectPlayer.renderable = RendererBatch_CreateComponent(batchPlayer, &objectPlayer.position, &objectPlayer.rotation, &objectPlayer.scale);
+    objectPlayer.physics = PhysicsScene_CreateComponent(scenePhysics, &objectPlayer.position, objectPlayer.scale, 1.0f, false);
+
+    objectPlane.position = NewVector3(0.0f, -3.0f, 0.0f);
+    objectPlane.rotation = Vector3_Zero;
+    objectPlane.scale = NewVector3(20.0f, 1.0f, 20.0f);
+    objectPlane.renderable = RendererBatch_CreateComponent(batchPlane, &objectPlane.position, &objectPlane.rotation, &objectPlane.scale);
+    objectPlane.physics = PhysicsScene_CreateComponent(scenePhysics, &objectPlane.position, objectPlane.scale, 0.0f, true);
 }
 
 void App_Loop(float deltaTime)
@@ -108,12 +130,12 @@ void App_Loop(float deltaTime)
 
     if (Input_GetKey(InputKeyCode_F, InputState_Down))
     {
-        Context_ConfigureFullScreen(!mainWindow->fullScreen);
+        Context_ConfigureFullScreen(!window->fullScreen);
     }
 
-    mainCamera.camera->size -= Input_GetMouseScroll();
+    camera.camera->size -= Input_GetMouseScroll();
 
-    myObj.rotation.y += deltaTime;
+    objectPlayer.rotation.y += deltaTime;
 
     if (Input_GetMouseButton(InputMouseButtonCode_Left, InputState_Pressed))
     {
@@ -122,14 +144,14 @@ void App_Loop(float deltaTime)
         Vector2Int mousePositionDelta = Input_GetMousePositionDelta();
         Vector3 movementVector = Input_GetMovementVector();
 
-        mainCamera.rotation.y += (float)mousePositionDelta.x * mainCamera.rotationSpeed * deltaTime;
-        mainCamera.rotation.x -= (float)mousePositionDelta.y * mainCamera.rotationSpeed * deltaTime;
-        mainCamera.rotation.x = Clamp(mainCamera.rotation.x, -89.0f, 89.0f);
+        camera.rotation.y += (float)mousePositionDelta.x * camera.rotationSpeed * deltaTime;
+        camera.rotation.x -= (float)mousePositionDelta.y * camera.rotationSpeed * deltaTime;
+        camera.rotation.x = Clamp(camera.rotation.x, -89.0f, 89.0f);
 
         Vector3 direction = Vector3_Normalized(NewVector3(
-            Cos(mainCamera.rotation.x) * Cos(mainCamera.rotation.y),
-            Sin(mainCamera.rotation.x),
-            Cos(mainCamera.rotation.x) * Sin(mainCamera.rotation.y)));
+            Cos(camera.rotation.x) * Cos(camera.rotation.y),
+            Sin(camera.rotation.x),
+            Cos(camera.rotation.x) * Sin(camera.rotation.y)));
 
         Vector3 right = Vector3_Normalized(Vector3_Cross(direction, Vector3_Up));
 
@@ -140,7 +162,7 @@ void App_Loop(float deltaTime)
         if (Vector3_Magnitude(move) > 0.0f)
         {
             move = Vector3_Normalized(move);
-            mainCamera.position = Vector3_Add(mainCamera.position, Vector3_Scale(move, mainCamera.speed * deltaTime));
+            camera.position = Vector3_Add(camera.position, Vector3_Scale(move, camera.speed * deltaTime));
         }
     }
     else
@@ -152,21 +174,27 @@ void App_Loop(float deltaTime)
         // myObj.position.z -= movementVector.y * deltaTime * mainCamera.speed;
     }
 
-    // PhysicsScene_UpdateComponents(myPhysicsScene, DT);
-    // PhysicsScene_ResolveCollisions(myPhysicsScene);
+    PhysicsScene_UpdateComponents(scenePhysics, deltaTime);
 
-    RendererScene_Update(myRendererScene);
+    // access collision data if needed by Physics_IsColliding(...)
+
+    PhysicsScene_ResolveCollisions(scenePhysics);
+
+    RendererScene_Update(sceneRenderer);
 
     // rendering
     Renderer_StartRendering();
-    Renderer_RenderScene(myRendererScene);
+    Renderer_RenderScene(sceneRenderer);
 
-    // RendererDebug_StartRendering();
+    RendererDebug_StartRendering();
 
-    // RendererDebug_FinishRendering(&mainCamera.camera->projectionMatrix, &mainCamera.camera->viewMatrix);
+    RendererDebug_DrawBoxLines(objectPlayer.position, objectPlayer.physics->colliderSize, Color_Cyan);
+    RendererDebug_DrawBoxLines(objectPlane.position, objectPlane.physics->colliderSize, Color_Red);
+
+    RendererDebug_FinishRendering(&camera.camera->projectionMatrix, &camera.camera->viewMatrix);
+
     Renderer_FinishRendering();
 
-    char titleBuffer[TEMP_BUFFER_SIZE];
     snprintf(titleBuffer, sizeof(titleBuffer), "%s | FPS: %f | Frame Time: %f ms", "Juliette", 1.0f / deltaTime, deltaTime * 1000);
     Context_ConfigureTitle(scl(titleBuffer));
 
