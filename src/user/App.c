@@ -11,11 +11,11 @@
 #define TEST_BENCH_TIME_SECONDS 10.0f
 #define TEST_WINDOW_SIZE NewVector2Int(1080, 720)
 #define TEST_VSYNC false
-#define TEST_FULL_SCREEN false
+#define TEST_FULL_SCREEN true
 #define TEST_GRAVITY_M -GRAVITY_M * 10.0f
 #define TEST_DRAG 0.05f
 #define TEST_ELASTICITY 1.0f
-#define TEST_BENCHMARK false
+#define TEST_BENCHMARK true
 
 #if TEST_BENCHMARK
 float benchTimer = 0.0f;
@@ -59,7 +59,7 @@ RendererModel *LoadModel(StringView name, StringView matFileName, StringView mdl
     ResourceImage_Destroy(texture);
 
     ResourceText *mdlFile = ResourceText_Create(mdlFileName, scl("models" PATH_DELIMETER_STR));
-    RendererModel *model = RendererModel_Create(name, scv(mdlFile->data), mdlFile->lineCount, &materials, NewVector3N(100.0f), NewVector3N(0.0f), NewVector3N(1.0f));
+    RendererModel *model = RendererModel_Create(name, scv(mdlFile->data), mdlFile->lineCount, &materials, NewVector3N(100.0f), NewVector3N(0.0f), NewVector3N(0.5f));
     ResourceText_Destroy(mdlFile);
     ListArray_Destroy(&materials);
 
@@ -91,7 +91,7 @@ void App_Setup(int argc, char **argv)
     ResourceText_Destroy(rscFragmentShader);
 
     RendererModel *modelPlayer = LoadModel(scl("Player"), scl("Player.mat"), scl("Player.mdl"), scl("Player.png"));
-    RendererModel *modelPlane = LoadModel(scl("Plane"), scl("Plane.mat"), scl("Plane.mdl"), scl("Plane.jpg"));
+    RendererModel *modelPlane = LoadModel(scl("Plane"), scl("Plane.mat"), scl("Plane.mdl"), scl("Plane.png"));
 
     sceneRenderer = RendererScene_Create(scl("My Renderer Scene"), 4);
     RendererBatch *batchPlayer = RendererScene_CreateBatch(sceneRenderer, scl("Player Batch"), modelPlayer, 1);
