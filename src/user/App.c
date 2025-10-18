@@ -10,7 +10,9 @@
 
 #define TEST_BENCH_TIME_SECONDS 10.0f
 #define TEST_WINDOW_SIZE NewVector2Int(1080, 720)
-#define TEST_OBJECT_COUNT 1024
+#define TEST_BATCH_COUNT 1024
+#define TEST_BATCH_OBJECT_COUNT 1
+#define TEST_OBJECT_COUNT (TEST_BATCH_COUNT * TEST_BATCH_OBJECT_COUNT)
 #define TEST_DEBUG_RENDERER RJ_BUILD_DEBUG
 #define TEST_VSYNC false
 #define TEST_FULL_SCREEN true
@@ -54,7 +56,7 @@ PhysicsScene *scenePhysics = NULL;
 myCameraType camera = {0};
 // myObjectType objectPlayer = {0};
 myObjectType objectPlane = {0};
-myObjectType testObjects[TEST_OBJECT_COUNT] = {0};
+myObjectType testObjects[TEST_BATCH_COUNT][TEST_BATCH_OBJECT_COUNT] = {0};
 char titleBuffer[RJ_TEMP_BUFFER_SIZE];
 
 RendererModel *LoadModel(StringView name, StringView matFileName, StringView mdlFileName, StringView texFileName, Vector3 scaleOffset)
@@ -106,10 +108,9 @@ void App_Setup(int argc, char **argv)
     RendererModel *modelPlane = LoadModel(scl("Plane"), scl("Plane.mat"), scl("Plane.mdl"), scl("Plane.png"), NewVector3N(0.5f));
     RendererModel *modelTest = LoadModel(scl("Test"), scl("Pistol.mat"), scl("Pistol.mdl"), scl("Player.png"), NewVector3N(1.0f));
 
-    sceneRenderer = RendererScene_Create(scl("My Renderer Scene"), TEST_OBJECT_COUNT);
-    // RendererBatch *batchPlayer = RendererScene_CreateBatch(sceneRenderer, scl("Player Batch"), modelPlayer, 1);
-    RendererBatch *batchPlane = RendererScene_CreateBatch(sceneRenderer, scl("Plane Batch"), modelPlane, 1);
-    RendererBatch *batchTest = RendererScene_CreateBatch(sceneRenderer, scl("Test Batch"), modelTest, TEST_OBJECT_COUNT);
+    scenePhysics = PhysicsScene_Create(scl("My Physics Scene"), TEST_OBJECT_COUNT + 1, TEST_DRAG, TEST_GRAVITY_M, TEST_ELASTICITY);
+
+    sceneRenderer = RendererScene_Create(scl("My Renderer Scene"), TEST_BATCH_COUNT + 1);
 
     camera.position = NewVector3(0.0f, 8.0f, 30.0f);
     camera.rotation = NewVector3(0.0f, -90.0f, 0.0f);
@@ -123,13 +124,8 @@ void App_Setup(int argc, char **argv)
 
     RendererScene_SetMainCamera(sceneRenderer, camera.camera);
 
-    scenePhysics = PhysicsScene_Create(scl("My Physics Scene"), TEST_OBJECT_COUNT + 1, TEST_DRAG, TEST_GRAVITY_M, TEST_ELASTICITY);
-
-    // objectPlayer.position = Vector3_Zero;
-    // objectPlayer.rotation = Vector3_Zero;
-    // objectPlayer.scale = Vector3_One;
-    // objectPlayer.renderable = RendererBatch_CreateComponent(batchPlayer, &objectPlayer.position, &objectPlayer.rotation, &objectPlayer.scale);
-    // objectPlayer.physics = PhysicsScene_CreateComponent(scenePhysics, &objectPlayer.position, objectPlayer.scale, 1.0f, false);
+    // RendererBatch *batchPlayer = RendererScene_CreateBatch(sceneRenderer, scl("Player Batch"), modelPlayer, 1);
+    RendererBatch *batchPlane = RendererScene_CreateBatch(sceneRenderer, scl("Plane Batch"), modelPlane, 1);
 
     objectPlane.position = NewVector3(0.0f, -3.0f, 0.0f);
     objectPlane.rotation = Vector3_Zero;
@@ -137,28 +133,40 @@ void App_Setup(int argc, char **argv)
     objectPlane.renderable = RendererBatch_CreateComponent(batchPlane, &objectPlane.position, &objectPlane.rotation, &objectPlane.scale);
     objectPlane.physics = PhysicsScene_CreateComponent(scenePhysics, &objectPlane.position, objectPlane.scale, 0.0f, true);
 
-    for (size_t i = 0; i < TEST_OBJECT_COUNT; i++)
-    {
-        myObjectType *testObject = testObjects + i;
-        testObject->position = NewVector3(RandomRange(-10, 10), RandomRange(0, 20), RandomRange(-10, 10));
-        testObject->rotation = Vector3_Zero;
-        testObject->scale = Vector3_One;
-        testObject->renderable = RendererBatch_CreateComponent(batchTest, &testObject->position, &testObject->rotation, &testObject->scale);
-        testObject->physics = PhysicsScene_CreateComponent(scenePhysics, &testObject->position, testObject->scale, 1.0f, false);
-    }
+    totalBatchCount++;
+    totalObjectCount++;
+    totalFaceCount += modelPlane->meshes.count;
+    totalVertexCount += modelPlane->vertices.count;
 
-    for (size_t i = 0; i < sceneRenderer->batches.count; i++)
+    for (size_t i = 0; i < TEST_BATCH_COUNT; i++)
     {
-        RendererBatch *batch = (RendererBatch *)ListArray_Get(&sceneRenderer->batches, i);
-        totalVertexCount += batch->model->vertices.count * batch->components.count;
+        RendererBatch *batchTest = RendererScene_CreateBatch(sceneRenderer, scl("Test Batch"), modelTest, TEST_BATCH_OBJECT_COUNT);
+
         totalBatchCount++;
-        totalObjectCount += batch->components.count;
-        for (size_t j = 0; j < batch->model->meshes.count; j++)
+        totalObjectCount += TEST_BATCH_OBJECT_COUNT;
+        totalVertexCount += modelTest->vertices.count * TEST_BATCH_OBJECT_COUNT;
+
+        for (size_t f = 0; f < modelTest->meshes.count; f++)
         {
-            RendererMesh *mesh = *(RendererMesh **)ListArray_Get(&batch->model->meshes, j);
-            totalFaceCount += mesh->indices.count / 3 * batch->components.count;
+            RendererMesh *mesh = *(RendererMesh **)ListArray_Get(&modelTest->meshes, f);
+            totalFaceCount += mesh->indices.count / 3 * TEST_BATCH_OBJECT_COUNT;
+        }
+
+        for (size_t j = 0; j < TEST_BATCH_OBJECT_COUNT; j++)
+        {
+            testObjects[i][j].position = NewVector3(RandomRange(-10, 10), RandomRange(0, 20), RandomRange(-10, 10));
+            testObjects[i][j].rotation = Vector3_Zero;
+            testObjects[i][j].scale = Vector3_One;
+            testObjects[i][j].renderable = RendererBatch_CreateComponent(batchTest, &testObjects[i][j].position, &testObjects[i][j].rotation, &testObjects[i][j].scale);
+            testObjects[i][j].physics = PhysicsScene_CreateComponent(scenePhysics, &testObjects[i][j].position, testObjects[i][j].scale, 1.0f, false);
         }
     }
+
+    // objectPlayer.position = Vector3_Zero;
+    // objectPlayer.rotation = Vector3_Zero;
+    // objectPlayer.scale = Vector3_One;
+    // objectPlayer.renderable = RendererBatch_CreateComponent(batchPlayer, &objectPlayer.position, &objectPlayer.rotation, &objectPlayer.scale);
+    // objectPlayer.physics = PhysicsScene_CreateComponent(scenePhysics, &objectPlayer.position, objectPlayer.scale, 1.0f, false);
 }
 
 void App_Loop(float deltaTime)
@@ -177,9 +185,12 @@ void App_Loop(float deltaTime)
 
     camera.camera->size -= Input_GetMouseScroll();
 
-    for (size_t i = 0; i < TEST_OBJECT_COUNT; i++)
+    for (size_t i = 0; i < TEST_BATCH_COUNT; i++)
     {
-        testObjects[i].rotation.y += deltaTime;
+        for (size_t j = 0; j < TEST_BATCH_OBJECT_COUNT; j++)
+        {
+            testObjects[i][j].rotation.y += deltaTime;
+        }
     }
 
     if (Input_GetMouseButton(InputMouseButtonCode_Left, InputState_Pressed))
