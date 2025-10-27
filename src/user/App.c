@@ -8,10 +8,10 @@
 #include "tools/Physics.h"
 #include "tools/Input.h"
 
-#define TEST_BENCH_TIME_SECONDS 10.0f
+#define TEST_BENCH_TIME_SECONDS 1.0f
 #define TEST_WINDOW_SIZE NewVector2Int(1080, 720)
-#define TEST_BATCH_COUNT 1024
-#define TEST_BATCH_OBJECT_COUNT 1
+#define TEST_BATCH_COUNT 32
+#define TEST_BATCH_OBJECT_COUNT 32
 #define TEST_OBJECT_COUNT (TEST_BATCH_COUNT * TEST_BATCH_OBJECT_COUNT)
 #define TEST_DEBUG_RENDERER RJ_BUILD_DEBUG
 #define TEST_VSYNC false
@@ -29,6 +29,8 @@ size_t totalFaceCount = 0;
 size_t totalVertexCount = 0;
 size_t totalBatchCount = 0;
 size_t totalObjectCount = 0;
+
+Timer timer = {0};
 #endif
 
 typedef struct myObjectType
@@ -162,6 +164,8 @@ void App_Setup(int argc, char **argv)
         }
     }
 
+    timer = Timer_Create("main timer");
+
     // objectPlayer.position = Vector3_Zero;
     // objectPlayer.rotation = Vector3_Zero;
     // objectPlayer.scale = Vector3_One;
@@ -185,6 +189,7 @@ void App_Loop(float deltaTime)
 
     camera.camera->size -= Input_GetMouseScroll();
 
+    Timer_Start(&timer);
     for (size_t i = 0; i < TEST_BATCH_COUNT; i++)
     {
         for (size_t j = 0; j < TEST_BATCH_OBJECT_COUNT; j++)
@@ -192,6 +197,8 @@ void App_Loop(float deltaTime)
             testObjects[i][j].rotation.y += deltaTime;
         }
     }
+    Timer_Stop(&timer);
+    DebugLog(false, "MONITOR", "rotating : %f ms", Timer_GetElapsedMilliseconds(&timer));
 
     if (Input_GetMouseButton(InputMouseButtonCode_Left, InputState_Pressed))
     {
@@ -230,12 +237,19 @@ void App_Loop(float deltaTime)
         // objectPlayer.position.z -= movementVector.y * deltaTime * camera.speed;
     }
 
+    Timer_Start(&timer);
     PhysicsScene_UpdateComponents(scenePhysics, deltaTime);
+    Timer_Stop(&timer);
+    DebugLog(false, "MONITOR", "physics update : %f ms", Timer_GetElapsedMilliseconds(&timer));
 
     // access collision data if needed by Physics_IsColliding(...)
 
+    Timer_Start(&timer);
     PhysicsScene_ResolveCollisions(scenePhysics);
+    Timer_Stop(&timer);
+    DebugLog(false, "MONITOR", "physics resolve : %f ms", Timer_GetElapsedMilliseconds(&timer));
 
+    Timer_Start(&timer);
     RendererScene_Update(sceneRenderer);
 
     // rendering
@@ -255,6 +269,8 @@ void App_Loop(float deltaTime)
 #endif
 
     Renderer_FinishRendering();
+    Timer_Stop(&timer);
+    DebugLog(false, "MONITOR", "rendering : %f ms", Timer_GetElapsedMilliseconds(&timer));
 
     snprintf(titleBuffer, sizeof(titleBuffer), "%s | FPS: %f | Frame Time: %f ms", "Juliette", 1.0f / deltaTime, deltaTime * 1000);
     Context_ConfigureTitle(scl(titleBuffer));
