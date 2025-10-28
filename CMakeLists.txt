@@ -23,21 +23,21 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-target_compile_options(${PROJECT_NAME} PRIVATE
-    -isystem${CMAKE_CURRENT_SOURCE_DIR}/dependencies/Romeo/include
+target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/Romeo/include
 )
 
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
-    if(CMAKE_C_COMPILER MATCHES "clang")
+    if(CMAKE_C_COMPILER MATCHES "clang-cl")
+        target_compile_options(${PROJECT_NAME} PRIVATE
+            /Zi /Od /W4 /permissive- /GS /WX /wd4324
+    )
+    elseif(CMAKE_C_COMPILER MATCHES "clang")
         target_compile_options(${PROJECT_NAME} PRIVATE
             -g -O0 -Wall -Werror -Wextra -Wshadow -Wpedantic -Wconversion
             -Wnull-dereference -Wunused-result -Wno-strict-prototypes
             -Wno-gnu-zero-variadic-macro-arguments -Wno-unused-value
             -fstack-protector-strong
-    )
-    elseif(CMAKE_C_COMPILER MATCHES "clang-cl")
-        target_compile_options(${PROJECT_NAME} PRIVATE
-            /Zi /Od /W4 /permissive- /GS /WX /wd4324
     )
     elseif(CMAKE_C_COMPILER MATCHES "cl")
         target_compile_options(${PROJECT_NAME} PRIVATE
@@ -45,22 +45,22 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
     )
     elseif(CMAKE_C_COMPILER MATCHES "gcc")
         target_compile_options(${PROJECT_NAME} PRIVATE
-            -g -O0 -Wall -Wextra -Wshadow -Wpedantic -Wconversion
+            -g -O0 -Wall -Werror -Wextra -Wshadow -Wpedantic -Wconversion
             -Wnull-dereference -Wunused-result -Wno-strict-prototypes
             -Wno-gnu-zero-variadic-macro-arguments -Wno-unused-command-line-argument
-            -Wno-unused-value -fstack-protector-strong -Werror
+            -Wno-unused-value -fstack-protector-strong
     )
     else()
         message(WARNING "Unknown/unsupported compiler. No specific compiler flags set.")
     endif()
 elseif(CMAKE_BUILD_TYPE MATCHES "Release")
-    if(CMAKE_C_COMPILER MATCHES "clang")
-        target_compile_options(${PROJECT_NAME} PRIVATE
-            -O3 -DNDEBUG
-        )
-    elseif(CMAKE_C_COMPILER MATCHES "clang-cl")
+    if(CMAKE_C_COMPILER MATCHES "clang-cl")
         target_compile_options(${PROJECT_NAME} PRIVATE
             /O2 /DNDEBUG
+        )
+    elseif(CMAKE_C_COMPILER MATCHES "clang")
+        target_compile_options(${PROJECT_NAME} PRIVATE
+            -O3 -DNDEBUG
         )
     elseif(CMAKE_C_COMPILER MATCHES "cl")
         target_compile_options(${PROJECT_NAME} PRIVATE
