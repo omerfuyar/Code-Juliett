@@ -20,25 +20,62 @@ file(GLOB_RECURSE PROJECT_SOURCE
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCE})
 
 target_include_directories(${PROJECT_NAME} PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 target_compile_options(${PROJECT_NAME} PRIVATE
     -isystem${CMAKE_CURRENT_SOURCE_DIR}/dependencies/Romeo/include
 )
 
-target_compile_options(${PROJECT_NAME} PRIVATE
-    $<$<CONFIG:Debug>:
-        -g -O0 -Wall -Wextra -Wshadow -Wpedantic -Wconversion
-        -Wnull-dereference -Wunused-result -Wno-strict-prototypes
-        -Wno-gnu-zero-variadic-macro-arguments -Wno-unused-command-line-argument
-        -Wno-unused-value -fstack-protector-strong -Werror
-    >
-    $<$<CONFIG:Release>:
-        -O3 -DNDEBUG
-    >
-)
+if(CMAKE_BUILD_TYPE MATCHES "Debug")
+    if(CMAKE_C_COMPILER MATCHES "clang")
+        target_compile_options(${PROJECT_NAME} PRIVATE
+            -g -O0 -Wall -Werror -Wextra -Wshadow -Wpedantic -Wconversion
+            -Wnull-dereference -Wunused-result -Wno-strict-prototypes
+            -Wno-gnu-zero-variadic-macro-arguments -Wno-unused-value
+            -fstack-protector-strong
+    )
+    elseif(CMAKE_C_COMPILER MATCHES "clang-cl")
+        target_compile_options(${PROJECT_NAME} PRIVATE
+            /Zi /Od /W4 /permissive- /GS /WX /wd4324
+    )
+    elseif(CMAKE_C_COMPILER MATCHES "cl")
+        target_compile_options(${PROJECT_NAME} PRIVATE
+            /Zi /Od /W4 /permissive- /GS /WX /wd4324
+    )
+    elseif(CMAKE_C_COMPILER MATCHES "gcc")
+        target_compile_options(${PROJECT_NAME} PRIVATE
+            -g -O0 -Wall -Wextra -Wshadow -Wpedantic -Wconversion
+            -Wnull-dereference -Wunused-result -Wno-strict-prototypes
+            -Wno-gnu-zero-variadic-macro-arguments -Wno-unused-command-line-argument
+            -Wno-unused-value -fstack-protector-strong -Werror
+    )
+    else()
+        message(WARNING "Unknown/unsupported compiler. No specific compiler flags set.")
+    endif()
+elseif(CMAKE_BUILD_TYPE MATCHES "Release")
+    if(CMAKE_C_COMPILER MATCHES "clang")
+        target_compile_options(${PROJECT_NAME} PRIVATE
+            -O3 -DNDEBUG
+        )
+    elseif(CMAKE_C_COMPILER MATCHES "clang-cl")
+        target_compile_options(${PROJECT_NAME} PRIVATE
+            /O2 /DNDEBUG
+        )
+    elseif(CMAKE_C_COMPILER MATCHES "cl")
+        target_compile_options(${PROJECT_NAME} PRIVATE
+            /O2 /DNDEBUG
+        )
+    elseif(CMAKE_C_COMPILER MATCHES "gcc")
+        target_compile_options(${PROJECT_NAME} PRIVATE
+            -O3 -DNDEBUG
+        )
+    else()
+        message(WARNING "Unknown/unsupported compiler. No specific compiler flags set.")
+    endif()
+else()
+    message(WARNING "Unknown build type. No specific compiler flags set.")
+endif()
 
 if((ENABLE_ASAN OR ENABLE_UBSAN) AND NOT CMAKE_C_COMPILER MATCHES "clang")
     message(FATAL_ERROR "Sanitizers are only compatible with LLVM")
