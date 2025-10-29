@@ -47,7 +47,6 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
         target_compile_options(${PROJECT_NAME} PRIVATE
             -g -O0 -Wall -Werror -Wextra -Wshadow -Wpedantic -Wconversion
             -Wnull-dereference -Wunused-result -Wno-strict-prototypes
-            -Wno-gnu-zero-variadic-macro-arguments -Wno-unused-command-line-argument
             -Wno-unused-value -fstack-protector-strong
     )
     else()
