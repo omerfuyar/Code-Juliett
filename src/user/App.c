@@ -377,9 +377,25 @@ void App_Terminate(int exitCode, char *exitMessage)
     (void)exitCode;
     (void)exitMessage;
 
-    Renderer_Terminate();
+    if (sceneRenderer != NULL)
+    {
+        RendererScene_Destroy(sceneRenderer);
+    }
+
+    if (scenePhysics != NULL)
+    {
+        PhysicsScene_Destroy(scenePhysics);
+    }
+
 #if TEST_DEBUG_RENDERER
-    RendererDebug_Terminate();
+    if (sceneRenderer != NULL)
+    {
+        RendererDebug_Terminate();
+    }
 #endif
-    Context_Terminate();
+
+    if (window != NULL)
+    {
+        Context_Terminate();
+    }
 }
