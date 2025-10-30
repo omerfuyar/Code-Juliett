@@ -10,17 +10,15 @@
 
 #define TEST_BENCH_TIME_SECONDS 10.0f
 #define TEST_WINDOW_SIZE NewVector2Int(1080, 720)
-#define TEST_BATCH_COUNT 32
-#define TEST_BATCH_OBJECT_COUNT 32
-#define TEST_OBJECT_COUNT (TEST_BATCH_COUNT * TEST_BATCH_OBJECT_COUNT)
+#define TEST_OBJECT_COUNT 16
 #define TEST_DEBUG_RENDERER RJ_BUILD_DEBUG
 #define TEST_VSYNC false
-#define TEST_FULL_SCREEN true
+#define TEST_FULL_SCREEN false
 #define TEST_GRAVITY_M -RJ_GRAVITY
 #define TEST_DRAG 0.0f
 #define TEST_ELASTICITY 1.0f
 #define TEST_OBJECT_SPEED_LIMIT 50
-#define TEST_BENCHMARK true
+#define TEST_BENCHMARK false
 #define TEST_MONITOR false
 
 #if TEST_BENCHMARK
@@ -61,36 +59,36 @@ RendererScene *sceneRenderer = NULL;
 PhysicsScene *scenePhysics = NULL;
 myCameraType camera = {0};
 // myObjectType objectPlayer = {0};
-myObjectType walls[6] = {0};
-myObjectType testObjects[TEST_BATCH_COUNT][TEST_BATCH_OBJECT_COUNT] = {0};
+// myObjectType walls[6] = {0};
+myObjectType testObjects[TEST_OBJECT_COUNT] = {0};
 char titleBuffer[RJ_TEMP_BUFFER_SIZE];
 
-RendererModel *LoadModel(StringView name, StringView matFileName, StringView mdlFileName)
+RendererModel *LoadModel(StringView matFileName, StringView mdlFileName)
 {
     ResourceText *matFile = ResourceText_Create(matFileName, scl("models" RJ_PATH_DELIMETER_STR));
-    ListArray materials = RendererMaterial_CreateFile(scv(matFile->data), matFile->lineCount);
-    // ListArray materials = RendererMaterial_CreateFile(scv(matFile->data), matFile->lineCount);
+    ListArray materials = RendererMaterial_CreateFromFile(scv(matFile->data), matFile->lineCount);
+    // ListArray materials = RendererMaterial_CreateFromFile(scv(matFile->data), matFile->lineCount);
     ResourceText_Destroy(matFile);
 
     ResourceText *mdlFile = ResourceText_Create(mdlFileName, scl("models" RJ_PATH_DELIMETER_STR));
-    RendererModel *model = RendererModel_Create(name, scv(mdlFile->data), mdlFile->lineCount, &materials, NewVector3N(0.0f), NewVector3N(0.0f), NewVector3N(0.5f));
+    RendererModel *model = RendererModel_Create(scv(mdlFile->data), mdlFile->lineCount, &materials, NewVector3N(0.0f), NewVector3N(0.0f), NewVector3N(0.5f));
     ResourceText_Destroy(mdlFile);
     ListArray_Destroy(&materials);
 
     return model;
 }
 
-RendererModel *LoadModelWithTexture(StringView name, StringView matFileName, StringView mdlFileName, StringView texFileName)
+RendererModel *LoadModelWithTexture(StringView matFileName, StringView mdlFileName, StringView texFileName)
 {
     ResourceText *matFile = ResourceText_Create(matFileName, scl("models" RJ_PATH_DELIMETER_STR));
     ResourceImage *texture = ResourceImage_Create(texFileName, scl("models" RJ_PATH_DELIMETER_STR));
-    ListArray materials = RendererMaterial_CreateTexture(scv(matFile->data), matFile->lineCount, texFileName, texture->data, texture->size, texture->channels);
-    // ListArray materials = RendererMaterial_CreateFile(scv(matFile->data), matFile->lineCount);
+    ListArray materials = RendererMaterial_CreateFromFileTextured(scv(matFile->data), matFile->lineCount, texFileName, texture->data, texture->size, texture->channels);
+    // ListArray materials = RendererMaterial_CreateFromFile(scv(matFile->data), matFile->lineCount);
     ResourceText_Destroy(matFile);
     ResourceImage_Destroy(texture);
 
     ResourceText *mdlFile = ResourceText_Create(mdlFileName, scl("models" RJ_PATH_DELIMETER_STR));
-    RendererModel *model = RendererModel_Create(name, scv(mdlFile->data), mdlFile->lineCount, &materials, NewVector3N(0.0f), NewVector3N(0.0f), NewVector3N(1.0f));
+    RendererModel *model = RendererModel_Create(scv(mdlFile->data), mdlFile->lineCount, &materials, NewVector3N(0.0f), NewVector3N(0.0f), NewVector3N(1.0f));
     ResourceText_Destroy(mdlFile);
     ListArray_Destroy(&materials);
 
@@ -126,15 +124,28 @@ void App_Setup(int argc, char **argv)
 #endif
 
     // RendererModel *modelPlane = LoadModelWithTexture(scl("Plane"), scl("Plane.mat"), scl("Plane.mdl"), scl("Plane.png"));
-    RendererModel *modelPlane = LoadModel(scl("Plane"), scl("Plane.mat"), scl("Plane.mdl"));
-    RendererModel *modelPistol = LoadModel(scl("Pistol"), scl("Pistol.mat"), scl("Pistol.mdl"));
-    RendererModel *modelHouse = LoadModel(scl("House"), scl("House.mat"), scl("House.mdl"));
+    // RendererModel *modelPlane = LoadModel(scl("Plane.mat"), scl("Plane.mdl"));
+    // RendererModel *modelPistol = LoadModel(scl("Pistol.mat"), scl("Pistol.mdl"));
+    // RendererModel *modelHouse = LoadModel(scl("House.mat"), scl("House.mdl"));
+    // RendererModel *modelCube = LoadModel(scl("Cube.mat"), scl("Cube.mdl"));
 
-    scenePhysics = PhysicsScene_Create(scl("My Physics Scene"), TEST_OBJECT_COUNT + 1, TEST_DRAG, TEST_GRAVITY_M, TEST_ELASTICITY);
+    ResourceText *matFile = ResourceText_Create(scl("Test.mat"), scl("models" RJ_PATH_DELIMETER_STR));
+    ListArray materialPool = RendererMaterial_CreateFromFile(scv(matFile->data), matFile->lineCount);
+    ResourceText_Destroy(matFile);
 
-    sceneRenderer = RendererScene_Create(scl("My Renderer Scene"), TEST_BATCH_COUNT + 1);
+    ResourceText *mdlFile = ResourceText_Create(scl("Test.mdl"), scl("models" RJ_PATH_DELIMETER_STR));
+    ListArray modelPool = RendererModel_CreateFromFile(scv(mdlFile->data), mdlFile->lineCount, &materialPool);
+    ResourceText_Destroy(mdlFile);
+    ListArray_Destroy(&materialPool);
 
-    camera.position = NewVector3(0.0f, 20.0f, 20.0f);
+    ResourceText *scnFile = ResourceText_Create(scl("Test.scn"), scl("models" RJ_PATH_DELIMETER_STR));
+    sceneRenderer = RendererScene_CreateFromFile(scv(scnFile->data), scnFile->lineCount, &modelPool, (Vector3 *)testObjects, 0, sizeof(myObjectType), TEST_OBJECT_COUNT);
+    ResourceText_Destroy(scnFile);
+    ListArray_Destroy(&modelPool);
+
+    // scenePhysics = PhysicsScene_Create(scl("My Physics Scene"), TEST_OBJECT_COUNT + 1, TEST_DRAG, TEST_GRAVITY_M, TEST_ELASTICITY);
+
+    camera.position = NewVector3(0.0f, 0.0f, 5.0f);
     camera.rotation = NewVector3(-45.0f, -90.0f, 0.0f);
     camera.speed = 10.0f;
     camera.rotationSpeed = 75.0f;
@@ -146,6 +157,7 @@ void App_Setup(int argc, char **argv)
 
     RendererScene_SetMainCamera(sceneRenderer, camera.camera);
 
+/*
     // RendererBatch *batchPlayer = RendererScene_CreateBatch(sceneRenderer, scl("Player Batch"), modelPlayer, 1);
     RendererBatch *batchPlane = RendererScene_CreateBatch(sceneRenderer, scl("Plane Batch"), modelPlane, 1);
 
@@ -219,7 +231,7 @@ void App_Setup(int argc, char **argv)
             testObjects[i][j].physics->velocity = NewVector3((float)RandomRange(-TEST_OBJECT_SPEED_LIMIT, TEST_OBJECT_SPEED_LIMIT), (float)RandomRange(-TEST_OBJECT_SPEED_LIMIT, TEST_OBJECT_SPEED_LIMIT), (float)RandomRange(-TEST_OBJECT_SPEED_LIMIT, TEST_OBJECT_SPEED_LIMIT));
         }
     }
-
+*/
 #if TEST_MONITOR
     timer = Timer_Create("main timer");
 #endif
@@ -250,13 +262,17 @@ void App_Loop(float deltaTime)
 #if TEST_MONITOR
     Timer_Start(&timer);
 #endif
-    for (size_t i = 0; i < TEST_BATCH_COUNT; i++)
-    {
-        for (size_t j = 0; j < TEST_BATCH_OBJECT_COUNT; j++)
+    /*
+        for (size_t i = 0; i < TEST_BATCH_COUNT; i++)
         {
-            testObjects[i][j].rotation.y += deltaTime;
+            for (size_t j = 0; j < TEST_BATCH_OBJECT_COUNT; j++)
+            {
+                testObjects[i][j].rotation.y += deltaTime;
+            }
         }
-    }
+    */
+
+    testObjects[0].rotation.y += deltaTime;
 #if TEST_MONITOR
     Timer_Stop(&timer);
     DebugLog(false, "MONITOR", "rotating : %f ms", Timer_GetElapsedMilliseconds(&timer));
@@ -302,7 +318,7 @@ void App_Loop(float deltaTime)
 #if TEST_MONITOR
     Timer_Start(&timer);
 #endif
-    PhysicsScene_UpdateComponents(scenePhysics, deltaTime);
+    // PhysicsScene_UpdateComponents(scenePhysics, deltaTime);
 #if TEST_MONITOR
     Timer_Stop(&timer);
     DebugLog(false, "MONITOR", "physics update : %f ms", Timer_GetElapsedMilliseconds(&timer));
@@ -313,7 +329,7 @@ void App_Loop(float deltaTime)
 #if TEST_MONITOR
     Timer_Start(&timer);
 #endif
-    PhysicsScene_ResolveCollisions(scenePhysics);
+    // PhysicsScene_ResolveCollisions(scenePhysics);
 #if TEST_MONITOR
     Timer_Stop(&timer);
     DebugLog(false, "MONITOR", "physics resolve : %f ms", Timer_GetElapsedMilliseconds(&timer));
@@ -329,15 +345,15 @@ void App_Loop(float deltaTime)
     Renderer_RenderScene(sceneRenderer);
 
 #if TEST_DEBUG_RENDERER
-    RendererDebug_StartRendering();
-
-    for (size_t i = 0; i < scenePhysics->components.count; i++)
-    {
-        PhysicsComponent *physComp = (PhysicsComponent *)ListArray_Get(&scenePhysics->components, i);
-        RendererDebug_DrawBoxLines(*physComp->positionReference, physComp->colliderSize, NewColor((float)(i % 2), (float)((i / 2) % 2), (float)((i / 4) % 2), 1.0f));
-    }
-
-    RendererDebug_FinishRendering(&camera.camera->projectionMatrix, &camera.camera->viewMatrix);
+    // RendererDebug_StartRendering();
+//
+// for (size_t i = 0; i < scenePhysics->components.count; i++)
+//{
+//    PhysicsComponent *physComp = (PhysicsComponent *)ListArray_Get(&scenePhysics->components, i);
+//    RendererDebug_DrawBoxLines(*physComp->positionReference, physComp->colliderSize, NewColor((float)(i % 2), (float)((i / 2) % 2), (float)((i / 4) % 2), 1.0f));
+//}
+//
+// RendererDebug_FinishRendering(&camera.camera->projectionMatrix, &camera.camera->viewMatrix);
 #endif
 
     Renderer_FinishRendering();
