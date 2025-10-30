@@ -139,7 +139,7 @@ void App_Setup(int argc, char **argv)
     ListArray_Destroy(&materialPool);
 
     ResourceText *scnFile = ResourceText_Create(scl("Test.scn"), scl("models" RJ_PATH_DELIMETER_STR));
-    sceneRenderer = RendererScene_CreateFromFile(scv(scnFile->data), scnFile->lineCount, &modelPool, (Vector3 *)testObjects, 0, sizeof(myObjectType), TEST_OBJECT_COUNT);
+    sceneRenderer = RendererScene_CreateFromFile(scv(scnFile->data), scnFile->lineCount, &modelPool, (void *)testObjects, 0, sizeof(myObjectType), TEST_OBJECT_COUNT);
     ResourceText_Destroy(scnFile);
     ListArray_Destroy(&modelPool);
 
