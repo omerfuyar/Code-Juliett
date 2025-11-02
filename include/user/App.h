@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Global.h"
+#include "RJGlobal.h"
 
 /// @brief Initializes the application.
 /// @param argc Argument count passed by the main function.

@@ -1,4 +1,4 @@
-#include "Global.h"
+#include "RJGlobal.h"
 #include "user/App.h"
 
 /*
@@ -7,9 +7,9 @@
 
 int main(int argc, char **argv)
 {
-    Global_SetSetupCallback(App_Setup);
-    Global_SetLoopCallback(App_Loop);
-    Global_SetTerminateCallback(App_Terminate);
+    RJGlobal_SetSetupCallback(App_Setup);
+    RJGlobal_SetLoopCallback(App_Loop);
+    RJGlobal_SetTerminateCallback(App_Terminate);
 
-    Global_Run(argc, argv);
+    RJGlobal_Run(argc, argv);
 }
