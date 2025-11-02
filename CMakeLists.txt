@@ -47,7 +47,7 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
         target_compile_options(${PROJECT_NAME} PRIVATE
             -g -O0 -Wall -Werror -Wextra -Wshadow -Wpedantic -Wconversion
             -Wnull-dereference -Wunused-result -Wno-strict-prototypes
-            -Wno-unused-value -fstack-protector-strong
+            -Wno-unused-value -fstack-protector-strong -Wno-gnu-zero-variadic-macro-arguments
     )
     else()
         message(WARNING "Unknown/unsupported compiler. No specific compiler flags set.")
