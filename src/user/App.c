@@ -58,42 +58,8 @@ ContextWindow *window = NULL;
 RendererScene *sceneRenderer = NULL;
 PhysicsScene *scenePhysics = NULL;
 myCameraType camera = {0};
-// myObjectType objectPlayer = {0};
-// myObjectType walls[6] = {0};
 myObjectType testObjects[TEST_OBJECT_COUNT] = {0};
 char titleBuffer[RJGLOBAL_TEMP_BUFFER_SIZE];
-
-RendererModel *LoadModel(StringView matFileName, StringView mdlFileName)
-{
-    ResourceText *matFile = ResourceText_Create(matFileName, scl("models" RJGLOBAL_PATH_DELIMETER_STR));
-    ListArray materials = RendererMaterial_CreateFromFile(scv(matFile->data), matFile->lineCount);
-    // ListArray materials = RendererMaterial_CreateFromFile(scv(matFile->data), matFile->lineCount);
-    ResourceText_Destroy(matFile);
-
-    ResourceText *mdlFile = ResourceText_Create(mdlFileName, scl("models" RJGLOBAL_PATH_DELIMETER_STR));
-    RendererModel *model = RendererModel_Create(scv(mdlFile->data), mdlFile->lineCount, &materials, Vector3_NewN(0.0f), Vector3_NewN(0.0f), Vector3_NewN(0.5f));
-    ResourceText_Destroy(mdlFile);
-    ListArray_Destroy(&materials);
-
-    return model;
-}
-
-RendererModel *LoadModelWithTexture(StringView matFileName, StringView mdlFileName, StringView texFileName)
-{
-    ResourceText *matFile = ResourceText_Create(matFileName, scl("models" RJGLOBAL_PATH_DELIMETER_STR));
-    ResourceImage *texture = ResourceImage_Create(texFileName, scl("models" RJGLOBAL_PATH_DELIMETER_STR));
-    ListArray materials = RendererMaterial_CreateFromFileTextured(scv(matFile->data), matFile->lineCount, texFileName, texture->data, texture->size, texture->channels);
-    // ListArray materials = RendererMaterial_CreateFromFile(scv(matFile->data), matFile->lineCount);
-    ResourceText_Destroy(matFile);
-    ResourceImage_Destroy(texture);
-
-    ResourceText *mdlFile = ResourceText_Create(mdlFileName, scl("models" RJGLOBAL_PATH_DELIMETER_STR));
-    RendererModel *model = RendererModel_Create(scv(mdlFile->data), mdlFile->lineCount, &materials, Vector3_NewN(0.0f), Vector3_NewN(0.0f), Vector3_NewN(1.0f));
-    ResourceText_Destroy(mdlFile);
-    ListArray_Destroy(&materials);
-
-    return model;
-}
 
 void App_Setup(int argc, char **argv)
 {
@@ -109,38 +75,19 @@ void App_Setup(int argc, char **argv)
     Input_Initialize(window);
     Renderer_Initialize(window, 4);
 
-    ResourceText *rscVertexShader = ResourceText_Create(scl("vertex.glsl"), scl("shaders" RJGLOBAL_PATH_DELIMETER_STR));
-    ResourceText *rscFragmentShader = ResourceText_Create(scl("fragment.glsl"), scl("shaders" RJGLOBAL_PATH_DELIMETER_STR));
-    Renderer_ConfigureShaders(scv(rscVertexShader->data), scv(rscFragmentShader->data));
-    ResourceText_Destroy(rscVertexShader);
-    ResourceText_Destroy(rscFragmentShader);
+    Renderer_ConfigureShaders(scl("shaders" RJGLOBAL_PATH_DELIMETER_STR "vertex.glsl"),
+                              scl("shaders" RJGLOBAL_PATH_DELIMETER_STR "fragment.glsl"));
 
 #if TEST_DEBUG_RENDERER
-    ResourceText *rscDebugVertexShader = ResourceText_Create(scl("debugVertex.glsl"), scl("shaders" RJGLOBAL_PATH_DELIMETER_STR));
-    ResourceText *rscDebugFragmentShader = ResourceText_Create(scl("debugFragment.glsl"), scl("shaders" RJGLOBAL_PATH_DELIMETER_STR));
-    RendererDebug_Initialize(scv(rscDebugVertexShader->data), scv(rscDebugFragmentShader->data), 8192);
-    ResourceText_Destroy(rscDebugVertexShader);
-    ResourceText_Destroy(rscDebugFragmentShader);
+    RendererDebug_Initialize(scl("shaders" RJGLOBAL_PATH_DELIMETER_STR "debugVertex.glsl"),
+                             scl("shaders" RJGLOBAL_PATH_DELIMETER_STR "debugFragment.glsl"), 8192);
 #endif
 
-    // RendererModel *modelPlane = LoadModelWithTexture(scl("Plane"), scl("Plane.mat"), scl("Plane.mdl"), scl("Plane.png"));
-    // RendererModel *modelPlane = LoadModel(scl("Plane.mat"), scl("Plane.mdl"));
-    // RendererModel *modelPistol = LoadModel(scl("Pistol.mat"), scl("Pistol.mdl"));
-    // RendererModel *modelHouse = LoadModel(scl("House.mat"), scl("House.mdl"));
-    // RendererModel *modelCube = LoadModel(scl("Cube.mat"), scl("Cube.mdl"));
-
-    ResourceText *matFile = ResourceText_Create(scl("Test.mat"), scl("models" RJGLOBAL_PATH_DELIMETER_STR));
-    ListArray materialPool = RendererMaterial_CreateFromFile(scv(matFile->data), matFile->lineCount);
-    ResourceText_Destroy(matFile);
-
-    ResourceText *mdlFile = ResourceText_Create(scl("Test.mdl"), scl("models" RJGLOBAL_PATH_DELIMETER_STR));
-    ListArray modelPool = RendererModel_CreateFromFile(scv(mdlFile->data), mdlFile->lineCount, &materialPool);
-    ResourceText_Destroy(mdlFile);
+    ListArray materialPool = RendererMaterial_CreateFromFile(scl("models" RJGLOBAL_PATH_DELIMETER_STR "Test.mat"));
+    ListArray modelPool = RendererModel_CreateFromFile(scl("models" RJGLOBAL_PATH_DELIMETER_STR "Test.mdl"), &materialPool);
     ListArray_Destroy(&materialPool);
 
-    ResourceText *scnFile = ResourceText_Create(scl("Test.scn"), scl("models" RJGLOBAL_PATH_DELIMETER_STR));
-    sceneRenderer = RendererScene_CreateFromFile(scv(scnFile->data), scnFile->lineCount, &modelPool, (void *)testObjects, 0, sizeof(myObjectType), TEST_OBJECT_COUNT);
-    ResourceText_Destroy(scnFile);
+    sceneRenderer = RendererScene_CreateFromFile(scl("models" RJGLOBAL_PATH_DELIMETER_STR "Test.scn"), &modelPool, (void *)testObjects, 0, sizeof(myObjectType), TEST_OBJECT_COUNT);
     ListArray_Destroy(&modelPool);
 
     // scenePhysics = PhysicsScene_Create(scl("My Physics Scene"), TEST_OBJECT_COUNT + 1, TEST_DRAG, TEST_GRAVITY_M, TEST_ELASTICITY);
@@ -157,90 +104,9 @@ void App_Setup(int argc, char **argv)
 
     RendererScene_SetMainCamera(sceneRenderer, camera.camera);
 
-/*
-    // RendererBatch *batchPlayer = RendererScene_CreateBatch(sceneRenderer, scl("Player Batch"), modelPlayer, 1);
-    RendererBatch *batchPlane = RendererScene_CreateBatch(sceneRenderer, scl("Plane Batch"), modelPlane, 1);
-
-    walls[0].position = Vector3_New(0.0f, 10.0f, 0.0f);
-    walls[0].rotation = Vector3_Zero;
-    walls[0].scale = Vector3_New(20.0f, 0.5f, 20.0f);
-    walls[0].renderable = RendererBatch_CreateComponent(batchPlane, &walls[0].position, &walls[0].rotation, &walls[0].scale);
-    walls[0].physics = PhysicsScene_CreateComponent(scenePhysics, &walls[0].position, walls[0].scale, 0.0f, true);
-
-    walls[1].position = Vector3_New(-10.0f, 0.0f, 0.0f);
-    walls[1].rotation = Vector3_Zero;
-    walls[1].scale = Vector3_New(0.5f, 20.0f, 20.0f);
-    walls[1].renderable = RendererBatch_CreateComponent(batchPlane, &walls[1].position, &walls[1].rotation, &walls[1].scale);
-    walls[1].physics = PhysicsScene_CreateComponent(scenePhysics, &walls[1].position, walls[1].scale, 0.0f, true);
-
-    walls[2].position = Vector3_New(10.0f, 0.0f, 0.0f);
-    walls[2].rotation = Vector3_Zero;
-    walls[2].scale = Vector3_New(0.5f, 20.0f, 20.0f);
-    walls[2].renderable = RendererBatch_CreateComponent(batchPlane, &walls[2].position, &walls[2].rotation, &walls[2].scale);
-    walls[2].physics = PhysicsScene_CreateComponent(scenePhysics, &walls[2].position, walls[2].scale, 0.0f, true);
-
-    walls[3].position = Vector3_New(0.0f, 0.0f, -10.0f);
-    walls[3].rotation = Vector3_Zero;
-    walls[3].scale = Vector3_New(20.0f, 20.0f, 0.5f);
-    walls[3].renderable = RendererBatch_CreateComponent(batchPlane, &walls[3].position, &walls[3].rotation, &walls[3].scale);
-    walls[3].physics = PhysicsScene_CreateComponent(scenePhysics, &walls[3].position, walls[3].scale, 0.0f, true);
-
-    walls[4].position = Vector3_New(0.0f, 0.0f, 10.0f);
-    walls[4].rotation = Vector3_Zero;
-    walls[4].scale = Vector3_New(20.0f, 20.0f, 0.5f);
-    walls[4].renderable = RendererBatch_CreateComponent(batchPlane, &walls[4].position, &walls[4].rotation, &walls[4].scale);
-    walls[4].physics = PhysicsScene_CreateComponent(scenePhysics, &walls[4].position, walls[4].scale, 0.0f, true);
-
-    walls[5].position = Vector3_New(0.0f, -10.0f, 0.0f);
-    walls[5].rotation = Vector3_Zero;
-    walls[5].scale = Vector3_New(20.0f, 0.5f, 20.0f);
-    walls[5].renderable = RendererBatch_CreateComponent(batchPlane, &walls[5].position, &walls[5].rotation, &walls[5].scale);
-    walls[5].physics = PhysicsScene_CreateComponent(scenePhysics, &walls[5].position, walls[5].scale, 0.0f, true);
-
-#if TEST_BENCHMARK
-    totalBatchCount++;
-    totalObjectCount++;
-    totalFaceCount += modelPlane->meshes.count;
-    totalVertexCount += modelPlane->vertices.count;
-#endif
-
-    for (size_t i = 0; i < TEST_BATCH_COUNT; i++)
-    {
-        RendererModel *modelToUse = (i % 2 == 0) ? modelPistol : modelHouse;
-        RendererBatch *batchTest = RendererScene_CreateBatch(sceneRenderer, scl("Test Batch"), modelToUse, TEST_BATCH_OBJECT_COUNT);
-
-#if TEST_BENCHMARK
-        totalBatchCount++;
-        totalObjectCount += TEST_BATCH_OBJECT_COUNT;
-        totalVertexCount += modelToUse->vertices.count * TEST_BATCH_OBJECT_COUNT;
-
-        for (size_t f = 0; f < modelToUse->meshes.count; f++)
-        {
-            RendererMesh *mesh = *(RendererMesh **)ListArray_Get(&modelToUse->meshes, f);
-            totalFaceCount += mesh->indices.count / 3 * TEST_BATCH_OBJECT_COUNT;
-        }
-#endif
-
-        for (size_t j = 0; j < TEST_BATCH_OBJECT_COUNT; j++)
-        {
-            testObjects[i][j].position = Vector3_New((float)Maths_RandomRange(-10, 10), (float)Maths_RandomRange(-10, 10), (float)Maths_RandomRange(-10, 10));
-            testObjects[i][j].rotation = Vector3_Zero;
-            testObjects[i][j].scale = Vector3_One;
-            testObjects[i][j].renderable = RendererBatch_CreateComponent(batchTest, &testObjects[i][j].position, &testObjects[i][j].rotation, &testObjects[i][j].scale);
-            testObjects[i][j].physics = PhysicsScene_CreateComponent(scenePhysics, &testObjects[i][j].position, testObjects[i][j].scale, 1.0f, false);
-            testObjects[i][j].physics->velocity = Vector3_New((float)Maths_RandomRange(-TEST_OBJECT_SPEED_LIMIT, TEST_OBJECT_SPEED_LIMIT), (float)Maths_RandomRange(-TEST_OBJECT_SPEED_LIMIT, TEST_OBJECT_SPEED_LIMIT), (float)Maths_RandomRange(-TEST_OBJECT_SPEED_LIMIT, TEST_OBJECT_SPEED_LIMIT));
-        }
-    }
-*/
 #if TEST_MONITOR
     timer = Timer_Create("main timer");
 #endif
-
-    // objectPlayer.position = Vector3_Zero;
-    // objectPlayer.rotation = Vector3_Zero;
-    // objectPlayer.scale = Vector3_One;
-    // objectPlayer.renderable = RendererBatch_CreateComponent(batchPlayer, &objectPlayer.position, &objectPlayer.rotation, &objectPlayer.scale);
-    // objectPlayer.physics = PhysicsScene_CreateComponent(scenePhysics, &objectPlayer.position, objectPlayer.scale, 1.0f, false);
 }
 
 void App_Loop(float deltaTime)
