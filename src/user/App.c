@@ -3,12 +3,12 @@
 #include "utilities/Maths.h"
 #include "utilities/Timer.h"
 
-#include "tools/Resource.h"
+#include "tools/Resources.h"
 
 #include "systems/Renderer.h"
 #include "systems/Physics.h"
 #include "systems/Input.h"
-#include "systems/Audio.h"
+// #include "systems/Audio.h"
 
 #define TEST_BENCH_TIME_SECONDS 10.0f
 #define TEST_WINDOW_SIZE Vector2Int_New(1080, 720)
@@ -76,7 +76,7 @@ void App_Setup(int argc, char **argv)
 
     Input_Initialize(window);
     Renderer_Initialize(window, 4);
-    Audio_Initialize(1);
+    // Audio_Initialize(1);
 
     Renderer_ConfigureShaders(scl("shaders" RJGLOBAL_PATH_DELIMETER_STR "vertex.glsl"),
                               scl("shaders" RJGLOBAL_PATH_DELIMETER_STR "fragment.glsl"));
@@ -107,9 +107,9 @@ void App_Setup(int argc, char **argv)
 
     RendererScene_SetMainCamera(sceneRenderer, camera.camera);
 
-    AudioClip *testClip = AudioClip_Create(scl("sounds" RJGLOBAL_PATH_DELIMETER_STR "Test.mp3"));
+    // AudioClip *testClip = AudioClip_Create(scl("sounds" RJGLOBAL_PATH_DELIMETER_STR "Test.mp3"));
 
-    Audio_PlayClip(testClip);
+    // Audio_PlayClip(testClip);
 
 #if TEST_MONITOR
     timer = Timer_Create("main timer");
