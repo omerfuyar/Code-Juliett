@@ -30,10 +30,10 @@ int main(int argc, char **argv)
     if (argc > 3)
     {
         SHU_CompilerSetFlags("-O3");
-        SHU_ModuleBegin("shuildRomeo");
+        SHU_ModuleBegin("ShuildRomeo");
         SHU_ModuleAddSourcefile("dependencies/Romeo/ShuildRomeo.c");
         SHU_ModuleCompile("dependencies/Romeo/", SHUM_MODULE_EXECUTABLE);
-        SHU_Run(".\\dependencies\\Romeo\\shuildRomeo.exe %s %s", argv[1], argv[2]);
+        SHU_Run(".\\dependencies\\Romeo\\ShuildRomeo.exe %s %s", argv[1], argv[2]);
     }
 
     char *compilerFlags = NULL;
