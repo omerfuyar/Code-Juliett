@@ -13,10 +13,10 @@
 
 // You can define various macros to configure Shuild before including this file.
 // define SHUILD_IMPLEMENTATION in one file to include the implementation.
-// define SHUM_NO_RUN_LOG to disable command run logs
-// define SHUM_NO_RUN_ERROR to disable termination on run error
-// define SHUM_NO_MODULE_LOG to disable module logs
-// define SHUM_MAX_<...> to customize various limits.
+// define SHUC_NO_MODULE_LOG to disable module logs.
+// define SHUC_NO_RUN_LOG to disable command run logs.
+// define SHUC_NO_RUN_ERROR to disable termination on run error.
+// define SHUC_MAX_<...> to customize various limits.
 
 #pragma once
 
@@ -106,24 +106,24 @@
 
 #pragma region Shuild Declarations
 
-#ifndef SHUM_MAX_STRING_ARRAY_COUNT
-#define SHUM_MAX_STRING_ARRAY_COUNT 16
+#ifndef SHUC_MAX_STRING_ARRAY_COUNT
+#define SHUC_MAX_STRING_ARRAY_COUNT 16
 #endif
 
-#ifndef SHUM_MAX_SOURCE_FILE_COUNT
-#define SHUM_MAX_SOURCE_FILE_COUNT 256
+#ifndef SHUC_MAX_SOURCE_FILE_COUNT
+#define SHUC_MAX_SOURCE_FILE_COUNT 256
 #endif
 
-#ifndef SHUM_MAX_COMMAND_BUFFER_SIZE
-#define SHUM_MAX_COMMAND_BUFFER_SIZE 4096
+#ifndef SHUC_MAX_COMMAND_BUFFER_SIZE
+#define SHUC_MAX_COMMAND_BUFFER_SIZE 4096
 #endif
 
-#ifndef SHUM_MAX_MESSAGE_BUFFER_SIZE
-#define SHUM_MAX_MESSAGE_BUFFER_SIZE 4096
+#ifndef SHUC_MAX_MESSAGE_BUFFER_SIZE
+#define SHUC_MAX_MESSAGE_BUFFER_SIZE 4096
 #endif
 
-#ifndef SHUM_MAX_PATH_SIZE
-#define SHUM_MAX_PATH_SIZE 256
+#ifndef SHUC_MAX_PATH_SIZE
+#define SHUC_MAX_PATH_SIZE 256
 #endif
 
 #define SHUM_ERROR 1
@@ -148,6 +148,12 @@
 
 #pragma region General
 
+/// @brief Enables autonomously rebuilding the build script when edited. I think it works only if the build system is one script. Run after configuring the compiler.
+/// @param argc Argument count from main function.
+/// @param argv Argument array from main function.
+#define SHU_Automate(argc, argv) SHU_AutomateI(argc, argv, __FILE__)
+void SHU_AutomateI(int argc, char **argv, const char *sourceName);
+
 /// @brief Internal command runner function.
 /// @param command Command to run with system. (eg. clang example.c -o example)
 void SHU_Run(const char *commandFormat, ...);
@@ -156,14 +162,19 @@ void SHU_Run(const char *commandFormat, ...);
 /// @param directory Directory to create (eg. resources/)
 void SHU_CreateRelativeDirectory(const char *directory);
 
-/// @brief Deletes a file.
+/// @brief Deletes a file or directory recursively.
 /// @param file File to delete. Relative to current executable.
 void SHU_DeleteFile(const char *file);
 
-/// @brief Copies a file.
+/// @brief Copies a file or directory recursively.
 /// @param file File to copy, relative to current executable.
 /// @param directory Directory to copy file, relative to current executable.
 void SHU_CopyFile(const char *file, const char *directory);
+
+/// @brief Renames a file.
+/// @param file File to rename.
+/// @param name New name of the file.
+void SHU_RenameFile(const char *file, const char *name);
 
 /// @brief Internal variadic logging function.
 /// @param terminate Exit code if not 0.
@@ -219,15 +230,15 @@ void SHU_CompilerSetFlags(const char *flags);
 /// @param name Name of the module. Which will be used also for output file name. (eg. myLibName, myAppName)
 void SHU_ModuleBegin(const char *name);
 
-/// @brief Adds include directories to the module. Max count is defined as `SHUM_MAX_STRING_ARRAY_COUNT`.
+/// @brief Adds include directories to the module. Max count is defined as `SHUC_MAX_STRING_ARRAY_COUNT`.
 /// @param directory Include directory to add to the current module. (eg. include/)
 void SHU_ModuleAddIncludeDirectory(const char *directory);
 
-/// @brief Adds source directories to the module. Works recursively. Max source file count is defined as `SHUM_MAX_SOURCE_FILE_COUNT`.
+/// @brief Adds source directories to the module. Works recursively. Max source file count is defined as `SHUC_MAX_SOURCE_FILE_COUNT`.
 /// @param directory Source directory to add to the current module. (eg. src/)
 void SHU_ModuleAddSourceDirectory(const char *directory);
 
-/// @brief Adds source files to the module. Max count is defined as `SHUM_MAX_STRING_ARRAY_COUNT`.
+/// @brief Adds source files to the module. Max count is defined as `SHUC_MAX_STRING_ARRAY_COUNT`.
 /// @param file Single file to add to the current module. (eg. source.c)
 void SHU_ModuleAddSourcefile(const char *file);
 
@@ -256,9 +267,11 @@ void SHU_ModuleLinkLibrary(const char *library);
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #if SHUM_HOST_PLATFORM == SHUM_PLATFORM_WINDOWS
 #include <windows.h>
+#include <process.h>
 #elif SHUM_HOST_PLATFORM == SHUM_PLATFORM_LINUX
 #include <unistd.h>
 #elif SHUM_HOST_PLATFORM == SHUM_PLATFORM_MACOS
@@ -276,13 +289,13 @@ typedef struct SHUI_String
 typedef struct SHUI_StringList
 {
     size_t count;
-    SHUI_String data[SHUM_MAX_STRING_ARRAY_COUNT];
+    SHUI_String data[SHUC_MAX_STRING_ARRAY_COUNT];
 } SHUI_StringList;
 
 typedef struct SHUI_StringListBig
 {
     size_t count;
-    SHUI_String data[SHUM_MAX_SOURCE_FILE_COUNT];
+    SHUI_String data[SHUC_MAX_SOURCE_FILE_COUNT];
 } SHUI_StringListBig;
 
 static SHUI_String SHUI_CURRENT_EXECUTABLE_DIRECTORY = {0};
@@ -443,7 +456,7 @@ static SHUI_String SHUI_GetCurrentExecutableDirectory()
 {
     if (SHUI_CURRENT_EXECUTABLE_DIRECTORY.data == NULL)
     {
-        char pathBuffer[SHUM_MAX_PATH_SIZE] = {0};
+        char pathBuffer[SHUC_MAX_PATH_SIZE] = {0};
 
 #if SHUM_HOST_PLATFORM == SHUM_PLATFORM_WINDOWS
         GetModuleFileName(NULL, pathBuffer, sizeof(pathBuffer));
@@ -453,7 +466,7 @@ static SHUI_String SHUI_GetCurrentExecutableDirectory()
 
         size_t pathLength = strlen(pathBuffer);
 
-        while (pathBuffer[pathLength - 1] != (SHUM_HOST_PLATFORM == SHUM_PLATFORM_WINDOWS ? '\\' : '/'))
+        while (pathLength > 0 && pathBuffer[pathLength - 1] != (SHUM_HOST_PLATFORM == SHUM_PLATFORM_WINDOWS ? '\\' : '/'))
         {
             pathBuffer[--pathLength] = '\0';
         }
@@ -469,7 +482,7 @@ static SHUI_String SHUI_GetCurrentExecutableDirectory()
 /// @param directory Full output directory of the executable file. (eg. C:/[...]/build/bin/)
 static void SHUI_CompileExecutable(SHUI_String directory)
 {
-    char includeBuffer[SHUM_MAX_COMMAND_BUFFER_SIZE] = {0};
+    char includeBuffer[SHUC_MAX_COMMAND_BUFFER_SIZE] = {0};
     size_t includeBufferIndex = 0;
     for (size_t i = 0; i < SHUI_MODULE_INCLUDE_DIRECTORIES.count; i++)
     {
@@ -481,7 +494,7 @@ static void SHUI_CompileExecutable(SHUI_String directory)
         includeBufferIndex += SHUI_MODULE_INCLUDE_DIRECTORIES.data[i].length + 3;
     }
 
-    char sourceBuffer[SHUM_MAX_COMMAND_BUFFER_SIZE] = {0};
+    char sourceBuffer[SHUC_MAX_COMMAND_BUFFER_SIZE] = {0};
     size_t sourceBufferIndex = 0;
     for (size_t i = 0; i < SHUI_MODULE_SOURCE_FILES.count; i++)
     {
@@ -492,7 +505,7 @@ static void SHUI_CompileExecutable(SHUI_String directory)
         sourceBufferIndex += SHUI_MODULE_SOURCE_FILES.data[i].length + 1;
     }
 
-    char linkDirectoryBuffer[SHUM_MAX_COMMAND_BUFFER_SIZE] = {0};
+    char linkDirectoryBuffer[SHUC_MAX_COMMAND_BUFFER_SIZE] = {0};
     size_t linkDirectoryBufferIndex = 0;
     for (size_t i = 0; i < SHUI_EXECUTABLE_LINK_DIRECTORIES.count; i++)
     {
@@ -504,7 +517,7 @@ static void SHUI_CompileExecutable(SHUI_String directory)
         linkDirectoryBufferIndex += SHUI_EXECUTABLE_LINK_DIRECTORIES.data[i].length + 3;
     }
 
-    char linkBuffer[SHUM_MAX_COMMAND_BUFFER_SIZE] = {0};
+    char linkBuffer[SHUC_MAX_COMMAND_BUFFER_SIZE] = {0};
     size_t linkBufferIndex = 0;
     for (size_t i = 0; i < SHUI_EXECUTABLE_LINKS.count; i++)
     {
@@ -516,7 +529,7 @@ static void SHUI_CompileExecutable(SHUI_String directory)
         linkBufferIndex += SHUI_EXECUTABLE_LINKS.data[i].length + 3;
     }
 
-    char flagBuffer[SHUM_MAX_COMMAND_BUFFER_SIZE] = {0};
+    char flagBuffer[SHUC_MAX_COMMAND_BUFFER_SIZE] = {0};
     size_t flagBufferIndex = 0;
     for (size_t i = 0; i < SHUI_COMPILER_FLAGS.count; i++)
     {
@@ -545,7 +558,7 @@ static void SHUI_CompileExecutable(SHUI_String directory)
 static void SHUI_CompileLibraryStatic(SHUI_String directory)
 {
     // commands for flags
-    char commandBuffer[SHUM_MAX_COMMAND_BUFFER_SIZE] = {0};
+    char commandBuffer[SHUC_MAX_COMMAND_BUFFER_SIZE] = {0};
     size_t commandBufferIndex = 0;
 
     for (size_t i = 0; i < SHUI_COMPILER_FLAGS.count; i++)
@@ -616,7 +629,7 @@ static void SHUI_CompileLibraryStatic(SHUI_String directory)
 static void SHUI_CompileLibraryDynamic(SHUI_String directory)
 {
     // commands for flags
-    char commandBuffer[SHUM_MAX_COMMAND_BUFFER_SIZE] = {0};
+    char commandBuffer[SHUC_MAX_COMMAND_BUFFER_SIZE] = {0};
     size_t commandBufferIndex = 0;
 
     for (size_t i = 0; i < SHUI_COMPILER_FLAGS.count; i++)
@@ -676,13 +689,74 @@ static void SHUI_CompileLibraryDynamic(SHUI_String directory)
 #if SHUM_HOST_PLATFORM == SHUM_PLATFORM_WINDOWS
     SHU_Run("del /F /Q %s", commandBuffer);
 #else
-    SHU_Run("rm -rf %s", commandBuffer);
+    SHU_Run("rm -rf %s 2>/dev/null", commandBuffer);
 #endif
 }
 
 #pragma endregion Internals
 
 #pragma region General
+
+void SHU_AutomateI(int argc, char **argv, const char *sourceName)
+{
+    if (argc < 1 || argv == NULL || sourceName == NULL)
+    {
+        SHU_LogError(SHUM_ERROR_NULL, "Null pointer passed as parameter to automate.");
+    }
+
+    size_t exeNameIndex = strlen(argv[0]) - 1;
+
+    while (exeNameIndex > 0 && argv[0][exeNameIndex - 1] != (SHUM_HOST_PLATFORM == SHUM_PLATFORM_WINDOWS ? '\\' : '/'))
+    {
+        exeNameIndex--;
+    }
+
+    size_t srcNameIndex = strlen(sourceName) - 1;
+
+    while (srcNameIndex > 0 && sourceName[srcNameIndex - 1] != (SHUM_HOST_PLATFORM == SHUM_PLATFORM_WINDOWS ? '\\' : '/'))
+    {
+        srcNameIndex--;
+    }
+
+    const char *exeName = argv[0] + exeNameIndex;
+    const char *srcName = sourceName + srcNameIndex;
+
+    struct stat attr;
+    time_t exeTime = stat(exeName, &attr) == 0 ? attr.st_mtime : 0;
+    time_t srcTime = stat(srcName, &attr) == 0 ? attr.st_mtime : 0;
+
+    if (exeTime >= srcTime)
+    {
+        return;
+    }
+
+    SHU_LogInfo("Build source has changed, rebuilding...");
+
+    char oldExeName[SHUC_MAX_PATH_SIZE] = {0};
+    snprintf(oldExeName, sizeof(oldExeName), "%s.old", exeName);
+    SHU_RenameFile(exeName, oldExeName);
+
+    SHU_Run("%s %s %s %s%s",
+            SHUI_COMPILER_COMMAND.data,
+            srcName,
+            SHUI_COMPILER == SHUM_COMPILER_MSVC ? "/O2" : "-O3",
+            SHUI_COMPILER == SHUM_COMPILER_MSVC ? "/Fe:" : "-o",
+            exeName);
+
+#if SHUM_HOST_PLATFORM == SHUM_PLATFORM_WINDOWS
+    intptr_t result = _spawnv(_P_WAIT, exeName, (const char *const *)argv);
+
+    if (result == -1)
+    {
+        SHU_LogError(SHUM_ERROR_INTERNAL, "Failed to spawn new process.");
+    }
+
+    exit((int)result);
+#elif
+    execv(exeName, (const char *const *)argv);
+    SHU_LogError(SHUM_ERROR_INTERNAL, "Failed to restart process.");
+#endif
+}
 
 void SHU_Run(const char *commandFormat, ...)
 {
@@ -691,14 +765,14 @@ void SHU_Run(const char *commandFormat, ...)
         SHU_LogError(SHUM_ERROR_NULL, "Null pointer passed as parameter to run.");
     }
 
-    char commandBuffer[SHUM_MAX_COMMAND_BUFFER_SIZE] = {0};
+    char commandBuffer[SHUC_MAX_COMMAND_BUFFER_SIZE] = {0};
 
     va_list args;
     va_start(args, commandFormat);
     vsnprintf(commandBuffer, sizeof(commandBuffer), commandFormat, args);
     va_end(args);
 
-#ifndef SHUM_NO_RUN_LOG
+#ifndef SHUC_NO_RUN_LOG
     SHU_LogInfo("Executing command : '%s'", commandBuffer);
 #endif
 
@@ -706,7 +780,7 @@ void SHU_Run(const char *commandFormat, ...)
 
     if (result != 0)
     {
-#ifdef SHUM_NO_RUN_ERROR
+#ifdef SHUC_NO_RUN_ERROR
         SHU_LogError(0, "Last executed command failed with exit code %d.", result);
 #else
         SHU_LogError(result, "Last executed command failed with exit code %d.", result);
@@ -757,7 +831,7 @@ void SHU_DeleteFile(const char *file)
     SHUI_SAppend(&fileStr, file);
 
 #if SHUM_HOST_PLATFORM == SHUM_PLATFORM_WINDOWS
-    SHU_Run("del /F /Q %s", fileStr.data);
+    SHU_Run("if exist %s del /F /Q %s", fileStr.data, fileStr.data);
 #else
     SHU_Run("rm -rf %s", fileStr.data);
 #endif
@@ -788,13 +862,42 @@ void SHU_CopyFile(const char *file, const char *directory)
 #if SHUM_HOST_PLATFORM == SHUM_PLATFORM_WINDOWS
     SHUI_SReplace(&directoryStr, '/', '\\');
     SHUI_SReplace(&fileStr, '/', '\\');
-    SHU_Run("xcopy /E /I /Y %s %s", fileStr.data, directoryStr.data);
+    SHU_Run("xcopy /Q /E /I /Y %s %s", fileStr.data, directoryStr.data);
 #else
-    SHU_Run("cp -r %s %s", fileStr.data, directoryStr.data);
+    SHU_Run("cp -r %s %s 2>/dev/null", fileStr.data, directoryStr.data);
 #endif
 
     SHUI_SDestroy(&directoryStr);
     SHUI_SDestroy(&fileStr);
+}
+
+void SHU_RenameFile(const char *file, const char *name)
+{
+    if (file == NULL || name == NULL)
+    {
+        SHU_LogError(SHUM_ERROR_NULL, "Null pointer passed as parameter to rename file.");
+    }
+
+    if (strlen(name) == 0 || strlen(file) == 0)
+    {
+        SHU_LogError(SHUM_ERROR_UNKNOWN, "Empty string passed as parameter to rename file.");
+    }
+
+    SHUI_String fileStr = SHUI_SCreate(SHUI_GetCurrentExecutableDirectory().data);
+    SHUI_String nameStr = SHUI_SCreate(SHUI_GetCurrentExecutableDirectory().data);
+
+    SHUI_SAppend(&fileStr, file);
+    SHUI_SAppend(&nameStr, name);
+
+    SHU_DeleteFile(name);
+
+    if (rename(fileStr.data, nameStr.data) != 0)
+    {
+        SHU_LogError(SHUM_ERROR_INTERNAL, "Error while renaming file '%s' to '%s'.", file, name);
+    }
+
+    SHUI_SDestroy(&fileStr);
+    SHUI_SDestroy(&nameStr);
 }
 
 void SHU_Log(int terminate, const char *header, const char *format, ...)
@@ -804,7 +907,7 @@ void SHU_Log(int terminate, const char *header, const char *format, ...)
         SHU_LogError(SHUM_ERROR_NULL, "Null pointer passed as parameter to log.");
     }
 
-    char messageBuffer[SHUM_MAX_MESSAGE_BUFFER_SIZE] = {0};
+    char messageBuffer[SHUC_MAX_MESSAGE_BUFFER_SIZE] = {0};
 
     va_list args;
     va_start(args, format);
@@ -873,7 +976,7 @@ void SHU_CompilerAddFlags(const char *flags)
 
     if (strlen(flags) != 0)
     {
-        SHUI_SLAdd(&SHUI_COMPILER_FLAGS, SHUI_SCreate(flags), SHUM_MAX_STRING_ARRAY_COUNT);
+        SHUI_SLAdd(&SHUI_COMPILER_FLAGS, SHUI_SCreate(flags), SHUC_MAX_STRING_ARRAY_COUNT);
     }
 }
 
@@ -920,7 +1023,7 @@ void SHU_ModuleAddIncludeDirectory(const char *directory)
 #if SHUM_HOST_PLATFORM == SHUM_PLATFORM_WINDOWS
     SHUI_SReplace(&correctedDirectory, '/', '\\');
 #endif
-    SHUI_SLAdd(&SHUI_MODULE_INCLUDE_DIRECTORIES, correctedDirectory, SHUM_MAX_STRING_ARRAY_COUNT);
+    SHUI_SLAdd(&SHUI_MODULE_INCLUDE_DIRECTORIES, correctedDirectory, SHUC_MAX_STRING_ARRAY_COUNT);
 }
 
 void SHU_ModuleAddSourcefile(const char *file)
@@ -935,7 +1038,7 @@ void SHU_ModuleAddSourcefile(const char *file)
 #if SHUM_HOST_PLATFORM == SHUM_PLATFORM_WINDOWS
     SHUI_SReplace(&correctedDirectory, '/', '\\');
 #endif
-    SHUI_SLAdd((SHUI_StringList *)&SHUI_MODULE_SOURCE_FILES, correctedDirectory, SHUM_MAX_SOURCE_FILE_COUNT);
+    SHUI_SLAdd((SHUI_StringList *)&SHUI_MODULE_SOURCE_FILES, correctedDirectory, SHUC_MAX_SOURCE_FILE_COUNT);
 }
 
 void SHU_ModuleAddSourceDirectory(const char *directory)
@@ -953,7 +1056,7 @@ void SHU_ModuleAddSourceDirectory(const char *directory)
 
 #if SHUM_HOST_PLATFORM == SHUM_PLATFORM_WINDOWS
     WIN32_FIND_DATAA ffd = {0};
-    char pattern[SHUM_MAX_PATH_SIZE] = {0};
+    char pattern[SHUC_MAX_PATH_SIZE] = {0};
 
     snprintf(pattern, sizeof(pattern), "%s*", correctedDirectory.data);
     HANDLE hFind = FindFirstFileA(pattern, &ffd);
@@ -972,11 +1075,11 @@ void SHU_ModuleAddSourceDirectory(const char *directory)
                 continue;
             }
 
-            char subDirectory[SHUM_MAX_PATH_SIZE] = {0};
+            char subDirectory[SHUC_MAX_PATH_SIZE] = {0};
             snprintf(subDirectory, sizeof(subDirectory), "%s%s\\", directory, ffd.cFileName);
             size_t subDirectoryIndex = 0;
 
-            while (subDirectoryIndex < SHUM_MAX_PATH_SIZE && subDirectory[subDirectoryIndex] != '\0')
+            while (subDirectoryIndex < SHUC_MAX_PATH_SIZE && subDirectory[subDirectoryIndex] != '\0')
             {
                 if (subDirectory[subDirectoryIndex] == '/')
                 {
@@ -995,7 +1098,7 @@ void SHU_ModuleAddSourceDirectory(const char *directory)
         {
             SHUI_String newFile = SHUI_SCreate(correctedDirectory.data);
             SHUI_SAppend(&newFile, ffd.cFileName);
-            SHUI_SLAdd((SHUI_StringList *)&SHUI_MODULE_SOURCE_FILES, newFile, SHUM_MAX_SOURCE_FILE_COUNT);
+            SHUI_SLAdd((SHUI_StringList *)&SHUI_MODULE_SOURCE_FILES, newFile, SHUC_MAX_SOURCE_FILE_COUNT);
         }
     } while (FindNextFileA(hFind, &ffd));
 
@@ -1041,7 +1144,7 @@ void SHU_ModuleCompile(const char *directory, char module)
         SHUI_COMPILER_COMMAND = SHUI_SCreate(SHUM_HOST_COMPILER_COMMAND);
     }
 
-#ifndef SHUM_NO_MODULE_LOG
+#ifndef SHUC_NO_MODULE_LOG
     SHU_LogInfo("Starting to compile %s '%s'...", SHUM_MODULE_GET_STRING(module), SHUI_MODULE_NAME.data);
 #endif
 
@@ -1088,7 +1191,7 @@ void SHU_ModuleCompile(const char *directory, char module)
     SHUI_SLClear(&SHUI_MODULE_INCLUDE_DIRECTORIES);
     SHUI_SLClear((SHUI_StringList *)&SHUI_MODULE_SOURCE_FILES);
 
-#ifndef SHUM_NO_MODULE_LOG
+#ifndef SHUC_NO_MODULE_LOG
     SHU_LogInfo("%s '%s' successfully compiled.", SHUM_MODULE_GET_STRING(module), SHUI_MODULE_NAME.data);
 #endif
 
@@ -1107,7 +1210,7 @@ void SHU_ModuleAddLibraryDirectory(const char *directory)
 #if SHUM_HOST_PLATFORM == SHUM_PLATFORM_WINDOWS
     SHUI_SReplace(&correctedDirectory, '/', '\\');
 #endif
-    SHUI_SLAdd(&SHUI_EXECUTABLE_LINK_DIRECTORIES, correctedDirectory, SHUM_MAX_STRING_ARRAY_COUNT);
+    SHUI_SLAdd(&SHUI_EXECUTABLE_LINK_DIRECTORIES, correctedDirectory, SHUC_MAX_STRING_ARRAY_COUNT);
 }
 
 void SHU_ModuleLinkLibrary(const char *library)
@@ -1117,7 +1220,7 @@ void SHU_ModuleLinkLibrary(const char *library)
         SHU_LogError(SHUM_ERROR_NULL, "Null pointer passed as parameter to module link library.");
     }
 
-    SHUI_SLAdd(&SHUI_EXECUTABLE_LINKS, SHUI_SCreate(library), SHUM_MAX_STRING_ARRAY_COUNT);
+    SHUI_SLAdd(&SHUI_EXECUTABLE_LINKS, SHUI_SCreate(library), SHUC_MAX_STRING_ARRAY_COUNT);
 }
 
 #pragma endregion Module

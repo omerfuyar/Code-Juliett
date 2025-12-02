@@ -3,7 +3,7 @@
 #include "utilities/Maths.h"
 #include "utilities/Timer.h"
 
-#include "tools/Resources.h"
+#include "tools/Resource.h"
 
 #include "systems/Renderer.h"
 #include "systems/Physics.h"

@@ -6,6 +6,7 @@
 *.o
 *.obj
 *.exe
+*.old
 
 # User-specific files
 ignore.*

@@ -1,5 +1,5 @@
-#define SHUM_MAX_COMMAND_BUFFER_SIZE 8192
-#define SHUM_NO_MODULE_LOG
+#define SHUC_NO_RUN_LOG
+#define SHUC_MAX_COMMAND_BUFFER_SIZE 8192
 #define SHUILD_IMPLEMENTATION
 #include "shuild.h"
 
@@ -7,7 +7,7 @@ int main(int argc, char **argv)
 {
     if (argc < 3)
     {
-        return 1;
+        goto usageError;
     }
 
     char isDebug = -1;
@@ -26,6 +26,7 @@ int main(int argc, char **argv)
     }
 
     SHU_CompilerTryConfigure(argv[1]);
+    SHU_Automate(argc, argv);
 
     if (argc > 3)
     {
@@ -103,4 +104,8 @@ int main(int argc, char **argv)
     SHU_CopyFile("resources/", isDebug ? "build/debug/resources/" : "build/release/resources/");
 
     return 0;
+
+usageError:
+    SHU_LogInfo("Usage is <compiler> <d/r> [all]");
+    return 1;
 }
