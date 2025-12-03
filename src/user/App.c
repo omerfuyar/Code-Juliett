@@ -8,34 +8,16 @@
 #include "systems/Renderer.h"
 #include "systems/Physics.h"
 #include "systems/Input.h"
-// #include "systems/Audio.h"
+#include "systems/Audio.h"
 
-#define TEST_BENCH_TIME_SECONDS 10.0f
 #define TEST_WINDOW_SIZE Vector2Int_New(1080, 720)
 #define TEST_OBJECT_COUNT 16
-#define TEST_DEBUG_RENDERER RJGLOBAL_BUILD_DEBUG
 #define TEST_VSYNC false
 #define TEST_FULL_SCREEN false
 #define TEST_GRAVITY_M -MATHS_GRAVITY
 #define TEST_DRAG 0.0f
 #define TEST_ELASTICITY 1.0f
 #define TEST_OBJECT_SPEED_LIMIT 50
-#define TEST_BENCHMARK false
-#define TEST_MONITOR false
-
-#if TEST_BENCHMARK
-float benchTimer = 0.0f;
-size_t benchFrameCount = 0;
-
-size_t totalFaceCount = 0;
-size_t totalVertexCount = 0;
-size_t totalBatchCount = 0;
-size_t totalObjectCount = 0;
-#endif
-
-#if TEST_MONITOR
-Timer timer = {0};
-#endif
 
 typedef struct myObjectType
 {
@@ -44,6 +26,7 @@ typedef struct myObjectType
     Vector3 scale;
     RendererComponent *renderable;
     PhysicsComponent *physics;
+    AudioComponent *audio;
 } myObjectType;
 
 typedef struct myCameraType
@@ -52,6 +35,7 @@ typedef struct myCameraType
     Vector3 position;
     Vector3 rotation;
     RendererCameraComponent *camera;
+    AudioListenerComponent *listener;
     float rotationSpeed;
     float speed;
 } myCameraType;
@@ -59,9 +43,11 @@ typedef struct myCameraType
 ContextWindow *window = NULL;
 RendererScene *sceneRenderer = NULL;
 PhysicsScene *scenePhysics = NULL;
+AudioScene *sceneAudio = NULL;
 myCameraType camera = {0};
 myObjectType testObjects[TEST_OBJECT_COUNT] = {0};
-char titleBuffer[RJGLOBAL_TEMP_BUFFER_SIZE];
+char titleBuffer[RJGLOBAL_TEMP_BUFFER_SIZE] = {0};
+float timer = 0.0f;
 
 void App_Setup(int argc, char **argv)
 {
@@ -76,15 +62,10 @@ void App_Setup(int argc, char **argv)
 
     Input_Initialize(window);
     Renderer_Initialize(window, 4);
-    // Audio_Initialize(1);
+    Audio_Initialize(1);
 
     Renderer_ConfigureShaders(scl("shaders" RJGLOBAL_PATH_DELIMETER_STR "vertex.glsl"),
                               scl("shaders" RJGLOBAL_PATH_DELIMETER_STR "fragment.glsl"));
-
-#if TEST_DEBUG_RENDERER
-    RendererDebug_Initialize(scl("shaders" RJGLOBAL_PATH_DELIMETER_STR "debugVertex.glsl"),
-                             scl("shaders" RJGLOBAL_PATH_DELIMETER_STR "debugFragment.glsl"), 8192);
-#endif
 
     ListArray materialPool = RendererMaterial_CreateFromFile(scl("models" RJGLOBAL_PATH_DELIMETER_STR "Test.mat"));
     ListArray modelPool = RendererModel_CreateFromFile(scl("models" RJGLOBAL_PATH_DELIMETER_STR "Test.mdl"), &materialPool);
@@ -93,6 +74,7 @@ void App_Setup(int argc, char **argv)
     sceneRenderer = RendererScene_CreateFromFile(scl("models" RJGLOBAL_PATH_DELIMETER_STR "Test.scn"), &modelPool, (void *)testObjects, 0, sizeof(myObjectType), TEST_OBJECT_COUNT);
     ListArray_Destroy(&modelPool);
 
+    sceneAudio = AudioScene_Create(scl("TestAudioScene"), 5);
     // scenePhysics = PhysicsScene_Create(scl("My Physics Scene"), TEST_OBJECT_COUNT + 1, TEST_DRAG, TEST_GRAVITY_M, TEST_ELASTICITY);
 
     camera.position = Vector3_New(0.0f, 0.0f, 5.0f);
@@ -104,16 +86,13 @@ void App_Setup(int argc, char **argv)
     camera.camera->size = 90.0f;
     camera.camera->nearClipPlane = 0.1f;
     camera.camera->farClipPlane = 1000.0f;
+    // camera.listener = AudioScene_CreateListenerComponent(sceneAudio, &camera.position, &camera.rotation);
 
     RendererScene_SetMainCamera(sceneRenderer, camera.camera);
 
-    // AudioClip *testClip = AudioClip_Create(scl("sounds" RJGLOBAL_PATH_DELIMETER_STR "Test.mp3"));
-
-    // Audio_PlayClip(testClip);
-
-#if TEST_MONITOR
-    timer = Timer_Create("main timer");
-#endif
+    testObjects[0].audio = AudioScene_CreateComponent(sceneAudio, scl("sounds" RJGLOBAL_PATH_DELIMETER_STR "Test.mp3"), &testObjects[0].position);
+    AudioComponent_Play(testObjects[0].audio);
+    AudioComponent_Rewind(testObjects[0].audio, 0.5f);
 }
 
 void App_Loop(float deltaTime)
@@ -132,19 +111,12 @@ void App_Loop(float deltaTime)
 
     camera.camera->size -= Input_GetMouseScroll();
 
-#if TEST_MONITOR
-    Timer_Start(&timer);
-#endif
     for (size_t i = 0; i < TEST_OBJECT_COUNT; i++)
     {
         testObjects[i].rotation.y += deltaTime;
     }
 
     testObjects[0].rotation.y += deltaTime;
-#if TEST_MONITOR
-    Timer_Stop(&timer);
-    RJGlobal_DebugLog(false, "MONITOR", "rotating : %f ms", Timer_GetElapsedMilliseconds(&timer));
-#endif
 
     if (Input_GetMouseButton(InputMouseButtonCode_Left, InputState_Pressed))
     {
@@ -183,77 +155,28 @@ void App_Loop(float deltaTime)
         // objectPlayer.position.z -= movementVector.y * deltaTime * camera.speed;
     }
 
-#if TEST_MONITOR
-    Timer_Start(&timer);
-#endif
+    timer += deltaTime;
+    if (timer > 3.0f)
+    {
+        AudioComponent_Pause(testObjects[0].audio);
+    }
+
     // PhysicsScene_UpdateComponents(scenePhysics, deltaTime);
-#if TEST_MONITOR
-    Timer_Stop(&timer);
-    RJGlobal_DebugLog(false, "MONITOR", "physics update : %f ms", Timer_GetElapsedMilliseconds(&timer));
-#endif
 
     // access collision data if needed by Physics_IsColliding(...)
 
-#if TEST_MONITOR
-    Timer_Start(&timer);
-#endif
     // PhysicsScene_ResolveCollisions(scenePhysics);
-#if TEST_MONITOR
-    Timer_Stop(&timer);
-    RJGlobal_DebugLog(false, "MONITOR", "physics resolve : %f ms", Timer_GetElapsedMilliseconds(&timer));
-#endif
 
-#if TEST_MONITOR
-    Timer_Start(&timer);
-#endif
     RendererScene_Update(sceneRenderer);
 
     // rendering
     Renderer_StartRendering();
     Renderer_RenderScene(sceneRenderer);
 
-#if TEST_DEBUG_RENDERER
-    // RendererDebug_StartRendering();
-//
-// for (size_t i = 0; i < scenePhysics->components.count; i++)
-//{
-//    PhysicsComponent *physComp = (PhysicsComponent *)ListArray_Get(&scenePhysics->components, i);
-//    RendererDebug_DrawBoxLines(*physComp->positionReference, physComp->colliderSize, Color_New((float)(i % 2), (float)((i / 2) % 2), (float)((i / 4) % 2), 1.0f));
-//}
-//
-// RendererDebug_FinishRendering(&camera.camera->projectionMatrix, &camera.camera->viewMatrix);
-#endif
-
     Renderer_FinishRendering();
-#if TEST_MONITOR
-    Timer_Stop(&timer);
-    RJGlobal_DebugLog(false, "MONITOR", "rendering : %f ms", Timer_GetElapsedMilliseconds(&timer));
-#endif
 
     snprintf(titleBuffer, sizeof(titleBuffer), "%s | FPS: %f | Frame Time: %f ms", "Juliette", 1.0f / deltaTime, deltaTime * 1000);
     Context_ConfigureTitle(scl(titleBuffer));
-
-#if TEST_BENCHMARK
-    benchTimer += deltaTime;
-    benchFrameCount++;
-
-    if (benchTimer >= TEST_BENCH_TIME_SECONDS)
-    {
-        char messageBuffer[RJGLOBAL_TEMP_BUFFER_SIZE];
-        snprintf(messageBuffer, sizeof(messageBuffer), "bt : %f sec | avgFPS : %f | f : %zu | v : %zu | b : %zu | o : %zu | fs : %s | dr : %s | cc : %zu",
-                 benchTimer,
-                 (float)benchFrameCount / TEST_BENCH_TIME_SECONDS,
-                 totalFaceCount,
-                 totalVertexCount,
-                 totalBatchCount,
-                 totalObjectCount,
-                 TEST_FULL_SCREEN ? "true" : "false",
-                 TEST_DEBUG_RENDERER ? "true" : "false",
-                 scenePhysics->components.count);
-
-        RJGlobal_Terminate(0, messageBuffer);
-    }
-#endif
 }
 
 void App_Terminate(int exitCode, char *exitMessage)
@@ -271,12 +194,10 @@ void App_Terminate(int exitCode, char *exitMessage)
         PhysicsScene_Destroy(scenePhysics);
     }
 
-#if TEST_DEBUG_RENDERER
-    if (sceneRenderer != NULL)
+    if (sceneAudio != NULL)
     {
-        RendererDebug_Terminate();
+        AudioScene_Destroy(sceneAudio);
     }
-#endif
 
     if (window != NULL)
     {
