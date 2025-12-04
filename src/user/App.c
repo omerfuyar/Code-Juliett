@@ -8,44 +8,35 @@
 #include "systems/Renderer.h"
 #include "systems/Physics.h"
 #include "systems/Input.h"
-#include "systems/Audio.h"
 
 #define TEST_WINDOW_SIZE Vector2Int_New(1080, 720)
 #define TEST_OBJECT_COUNT 16
 #define TEST_VSYNC false
 #define TEST_FULL_SCREEN false
-#define TEST_GRAVITY_M -MATHS_GRAVITY
+#define TEST_GRAVITY_M 0.0f /*-MATHS_GRAVITY*/
 #define TEST_DRAG 0.0f
 #define TEST_ELASTICITY 1.0f
 #define TEST_OBJECT_SPEED_LIMIT 50
 
-typedef struct myObjectType
+struct TEST_DATA
 {
-    Vector3 position;
-    Vector3 rotation;
-    Vector3 scale;
-    RendererComponent *renderable;
-    PhysicsComponent *physics;
-    AudioComponent *audio;
-} myObjectType;
+    Vector3 positions[TEST_OBJECT_COUNT];
+    Vector3 rotations[TEST_OBJECT_COUNT];
+    Vector3 scales[TEST_OBJECT_COUNT];
+    PhysicsComponent physicsComponents[TEST_OBJECT_COUNT];
+} testObjectDatas = {0};
 
-typedef struct myCameraType
+struct TEST_CAMERA
 {
-    String name;
     Vector3 position;
     Vector3 rotation;
-    RendererCameraComponent *camera;
-    AudioListenerComponent *listener;
-    float rotationSpeed;
     float speed;
-} myCameraType;
+    float rotationSpeed;
+    RendererCameraComponent *camera;
+} camera = {0};
 
 ContextWindow *window = NULL;
 RendererScene *sceneRenderer = NULL;
-PhysicsScene *scenePhysics = NULL;
-AudioScene *sceneAudio = NULL;
-myCameraType camera = {0};
-myObjectType testObjects[TEST_OBJECT_COUNT] = {0};
 char titleBuffer[RJGLOBAL_TEMP_BUFFER_SIZE] = {0};
 float timer = 0.0f;
 
@@ -62,20 +53,22 @@ void App_Setup(int argc, char **argv)
 
     Input_Initialize(window);
     Renderer_Initialize(window, 4);
-    Audio_Initialize(1);
 
     Renderer_ConfigureShaders(scl("shaders" RJGLOBAL_PATH_DELIMETER_STR "vertex.glsl"),
                               scl("shaders" RJGLOBAL_PATH_DELIMETER_STR "fragment.glsl"));
 
-    ListArray materialPool = RendererMaterial_CreateFromFile(scl("models" RJGLOBAL_PATH_DELIMETER_STR "Test.mat"));
-    ListArray modelPool = RendererModel_CreateFromFile(scl("models" RJGLOBAL_PATH_DELIMETER_STR "Test.mdl"), &materialPool);
-    ListArray_Destroy(&materialPool);
+    ListArray pistolMaterials = RendererMaterial_CreateFromFile(scl("models" RJGLOBAL_PATH_DELIMETER_STR "Pistol.mat"));
+    RendererModel *pistolMdl = RendererModel_Create(scl("models" RJGLOBAL_PATH_DELIMETER_STR "Pistol.mdl"), &pistolMaterials, Vector3_Zero, Vector3_Zero, Vector3_One);
+    sceneRenderer = RendererScene_CreateEmpty(scl("Main Scene"), TEST_OBJECT_COUNT);
+    RendererBatch *testBatch = RendererScene_CreateBatch(sceneRenderer, pistolMdl, TEST_OBJECT_COUNT);
 
-    sceneRenderer = RendererScene_CreateFromFile(scl("models" RJGLOBAL_PATH_DELIMETER_STR "Test.scn"), &modelPool, (void *)testObjects, 0, sizeof(myObjectType), TEST_OBJECT_COUNT);
-    ListArray_Destroy(&modelPool);
+    RendererComponent *component = RendererBatch_CreateComponent(testBatch, &testObjectDatas.positions[0], &testObjectDatas.rotations[0], &testObjectDatas.scales[0]);
 
-    sceneAudio = AudioScene_Create(scl("TestAudioScene"), 5);
-    // scenePhysics = PhysicsScene_Create(scl("My Physics Scene"), TEST_OBJECT_COUNT + 1, TEST_DRAG, TEST_GRAVITY_M, TEST_ELASTICITY);
+    (void)component;
+
+    Physics_Initialize(TEST_OBJECT_COUNT, (Vector3 *)testObjectDatas.positions, TEST_DRAG, TEST_GRAVITY_M, TEST_ELASTICITY);
+
+    testObjectDatas.physicsComponents[0] = Physics_ComponentCreate(0, Vector3_One, 1.0f, false);
 
     camera.position = Vector3_New(0.0f, 0.0f, 5.0f);
     camera.rotation = Vector3_New(-45.0f, -90.0f, 0.0f);
@@ -89,10 +82,6 @@ void App_Setup(int argc, char **argv)
     // camera.listener = AudioScene_CreateListenerComponent(sceneAudio, &camera.position, &camera.rotation);
 
     RendererScene_SetMainCamera(sceneRenderer, camera.camera);
-
-    testObjects[0].audio = AudioScene_CreateComponent(sceneAudio, scl("sounds" RJGLOBAL_PATH_DELIMETER_STR "Test.mp3"), &testObjects[0].position);
-    AudioComponent_Play(testObjects[0].audio);
-    AudioComponent_Rewind(testObjects[0].audio, 0.5f);
 }
 
 void App_Loop(float deltaTime)
@@ -111,12 +100,10 @@ void App_Loop(float deltaTime)
 
     camera.camera->size -= Input_GetMouseScroll();
 
-    for (size_t i = 0; i < TEST_OBJECT_COUNT; i++)
+    for (RJGlobal_Size i = 0; i < TEST_OBJECT_COUNT; i++)
     {
-        testObjects[i].rotation.y += deltaTime;
+        testObjectDatas.rotations[i].y += deltaTime;
     }
-
-    testObjects[0].rotation.y += deltaTime;
 
     if (Input_GetMouseButton(InputMouseButtonCode_Left, InputState_Pressed))
     {
@@ -155,18 +142,11 @@ void App_Loop(float deltaTime)
         // objectPlayer.position.z -= movementVector.y * deltaTime * camera.speed;
     }
 
-    timer += deltaTime;
-    if (timer > 3.0f)
-    {
-        AudioComponent_Pause(testObjects[0].audio);
-    }
-
-    // PhysicsScene_UpdateComponents(scenePhysics, deltaTime);
+    Physics_UpdateComponents(deltaTime);
 
     // access collision data if needed by Physics_IsColliding(...)
 
-    // PhysicsScene_ResolveCollisions(scenePhysics);
-
+    Physics_ResolveCollisions();
     RendererScene_Update(sceneRenderer);
 
     // rendering
@@ -184,19 +164,11 @@ void App_Terminate(int exitCode, char *exitMessage)
     (void)exitCode;
     (void)exitMessage;
 
+    Physics_Terminate();
+
     if (sceneRenderer != NULL)
     {
         RendererScene_Destroy(sceneRenderer);
-    }
-
-    if (scenePhysics != NULL)
-    {
-        PhysicsScene_Destroy(scenePhysics);
-    }
-
-    if (sceneAudio != NULL)
-    {
-        AudioScene_Destroy(sceneAudio);
     }
 
     if (window != NULL)
