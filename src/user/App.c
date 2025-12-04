@@ -1,7 +1,6 @@
 #include "user/App.h"
 
 #include "utilities/Maths.h"
-#include "utilities/Timer.h"
 
 #include "tools/Resource.h"
 
@@ -17,6 +16,19 @@
 #define TEST_DRAG 0.0f
 #define TEST_ELASTICITY 1.0f
 
+struct TEST_CAMERA
+{
+    Vector3 position;
+    Vector3 rotation;
+    float size;
+    float nearClipPlane;
+    float farClipPlane;
+    bool isPerspective;
+
+    float speed;
+    float rotationSpeed;
+} camera = {0};
+
 struct TEST_DATA
 {
     RJGlobal_Size count;
@@ -24,34 +36,25 @@ struct TEST_DATA
     Vector3 rotations[TEST_OBJECT_COUNT];
     Vector3 scales[TEST_OBJECT_COUNT];
     PhysicsComponent physicsComponents[TEST_OBJECT_COUNT];
+    RendererComponent rendererComponents[TEST_OBJECT_COUNT];
     bool actives[TEST_OBJECT_COUNT];
-} testObjectDatas = {0};
+} testEntityDatas = {0};
 
 typedef RJGlobal_Index TestEntity;
 
-TestEntity TestEntity_Create(Vector3 position, Vector3 rotation, Vector3 scale, PhysicsComponent physics)
+TestEntity TestEntity_Create(Vector3 position, Vector3 rotation, Vector3 scale, PhysicsComponent body, RendererComponent renderable)
 {
-    testObjectDatas.positions[testObjectDatas.count] = position;
-    testObjectDatas.rotations[testObjectDatas.count] = rotation;
-    testObjectDatas.scales[testObjectDatas.count] = scale;
-    testObjectDatas.physicsComponents[testObjectDatas.count] = physics;
-    testObjectDatas.actives[testObjectDatas.count] = true;
-    return testObjectDatas.count++;
+    testEntityDatas.positions[testEntityDatas.count] = position;
+    testEntityDatas.rotations[testEntityDatas.count] = rotation;
+    testEntityDatas.scales[testEntityDatas.count] = scale;
+    testEntityDatas.physicsComponents[testEntityDatas.count] = body;
+    testEntityDatas.actives[testEntityDatas.count] = true;
+    testEntityDatas.rendererComponents[testEntityDatas.count] = renderable;
+    return testEntityDatas.count++;
 }
 
-struct TEST_CAMERA
-{
-    Vector3 position;
-    Vector3 rotation;
-    float speed;
-    float rotationSpeed;
-    RendererCameraComponent *camera;
-} camera = {0};
-
 ContextWindow *window = NULL;
-RendererScene *sceneRenderer = NULL;
 char titleBuffer[RJGLOBAL_TEMP_BUFFER_SIZE] = {0};
-float timer = 0.0f;
 
 void App_Setup(int argc, char **argv)
 {
@@ -66,36 +69,33 @@ void App_Setup(int argc, char **argv)
 
     Input_Initialize(window);
     Renderer_Initialize(window, 4);
+    Physics_Initialize(TEST_OBJECT_COUNT, (Vector3 *)testEntityDatas.positions, TEST_DRAG, TEST_GRAVITY_M, TEST_ELASTICITY);
 
     Renderer_ConfigureShaders(scl("shaders" RJGLOBAL_PATH_DELIMETER_STR "vertex.glsl"),
                               scl("shaders" RJGLOBAL_PATH_DELIMETER_STR "fragment.glsl"));
-
-    ListArray pistolMaterials = RendererMaterial_CreateFromFile(scl("models" RJGLOBAL_PATH_DELIMETER_STR "Pistol.mat"));
-    RendererModel *pistolMdl = RendererModel_Create(scl("models" RJGLOBAL_PATH_DELIMETER_STR "Pistol.mdl"), &pistolMaterials, Vector3_Zero, Vector3_Zero, Vector3_One);
-    sceneRenderer = RendererScene_CreateEmpty(scl("Main Scene"), TEST_OBJECT_COUNT);
-    RendererBatch *testBatch = RendererScene_CreateBatch(sceneRenderer, pistolMdl, TEST_OBJECT_COUNT);
-
-    RendererComponent *component = RendererBatch_CreateComponent(testBatch, &testObjectDatas.positions[0], &testObjectDatas.rotations[0], &testObjectDatas.scales[0]);
-
-    (void)component;
-
-    Physics_Initialize(TEST_OBJECT_COUNT, (Vector3 *)testObjectDatas.positions, TEST_DRAG, TEST_GRAVITY_M, TEST_ELASTICITY);
-
-    TestEntity_Create(Vector3_Zero, Vector3_Zero, Vector3_One, Physics_ComponentCreate(0, Vector3_One, 1.0f, false));
-    TestEntity_Create(Vector3_New(0.0f, -10.0f, 0.0f), Vector3_Zero, Vector3_One, Physics_ComponentCreate(1, Vector3_Scale(Vector3_One, 5.0f), 1.0f, true));
 
     camera.position = Vector3_New(0.0f, 0.0f, 5.0f);
     camera.rotation = Vector3_New(-45.0f, -90.0f, 0.0f);
     camera.speed = 10.0f;
     camera.rotationSpeed = 75.0f;
-    camera.camera = RendererCameraComponent_Create(&camera.position, &camera.rotation);
-    camera.camera->isPerspective = true;
-    camera.camera->size = 90.0f;
-    camera.camera->nearClipPlane = 0.1f;
-    camera.camera->farClipPlane = 1000.0f;
-    // camera.listener = AudioScene_CreateListenerComponent(sceneAudio, &camera.position, &camera.rotation);
+    camera.size = 90.0f;
+    camera.nearClipPlane = 0.01f;
+    camera.farClipPlane = 1000.0f;
+    camera.isPerspective = true;
 
-    RendererScene_SetMainCamera(sceneRenderer, camera.camera);
+    Renderer_ConfigureCamera(&camera.position, &camera.rotation, &camera.size, &camera.nearClipPlane, &camera.farClipPlane, &camera.isPerspective);
+
+    // ListArray pistolMaterials = RendererMaterial_CreateFromFile(scl("models" RJGLOBAL_PATH_DELIMETER_STR "Pistol.mat"));
+    // RendererModel *pistolMdl = RendererModel_Create(scl("models" RJGLOBAL_PATH_DELIMETER_STR "Pistol.mdl"), &pistolMaterials, Vector3_Zero, Vector3_Zero, Vector3_One);
+    // sceneRenderer = RendererScene_CreateEmpty(scl("Main Scene"), TEST_OBJECT_COUNT);
+    // RendererBatch *testBatch = RendererScene_CreateBatch(sceneRenderer, pistolMdl, TEST_OBJECT_COUNT);
+
+    // RendererComponent *component = RendererBatch_CreateComponent(testBatch, &testEntityDatas.positions[0], &testEntityDatas.rotations[0], &testEntityDatas.scales[0]);
+
+    RendererBatch testBatch = Renderer_BatchCreate(scl("models" RJGLOBAL_PATH_DELIMETER_STR "Pistol.mdl"), TEST_OBJECT_COUNT);
+
+    TestEntity_Create(Vector3_Zero, Vector3_Zero, Vector3_One, Physics_ComponentCreate(0, Vector3_One, 1.0f, false), Renderer_ComponentCreate(0, testBatch, &testEntityDatas.positions[0], &testEntityDatas.rotations[0], &testEntityDatas.scales[0]));
+    TestEntity_Create(Vector3_New(0.0f, -10.0f, 0.0f), Vector3_Zero, Vector3_One, Physics_ComponentCreate(1, Vector3_Scale(Vector3_One, 5.0f), 1.0f, true), Renderer_ComponentCreate(0, testBatch, &testEntityDatas.positions[0], &testEntityDatas.rotations[0], &testEntityDatas.scales[0]));
 }
 
 void App_Loop(float deltaTime)
@@ -109,14 +109,14 @@ void App_Loop(float deltaTime)
 
     if (Input_GetKey(InputKeyCode_R, InputState_Down))
     {
-        camera.camera->isPerspective = !camera.camera->isPerspective;
+        camera.isPerspective = !camera.isPerspective;
     }
 
-    camera.camera->size -= Input_GetMouseScroll();
+    camera.size -= Input_GetMouseScroll();
 
     for (RJGlobal_Size i = 0; i < TEST_OBJECT_COUNT; i++)
     {
-        testObjectDatas.rotations[i].y += deltaTime;
+        testEntityDatas.rotations[i].y += deltaTime;
     }
 
     if (Input_GetMouseButton(InputMouseButtonCode_Left, InputState_Pressed))
@@ -162,13 +162,10 @@ void App_Loop(float deltaTime)
 
     Physics_ResolveCollisions();
 
-    RendererScene_Update(sceneRenderer);
-
     // rendering
-    Renderer_StartRendering();
-    Renderer_RenderScene(sceneRenderer);
+    Renderer_Update();
 
-    Renderer_FinishRendering();
+    Renderer_Render();
 
     snprintf(titleBuffer, sizeof(titleBuffer), "%s | FPS: %f | Frame Time: %f ms", "Juliette", 1.0f / deltaTime, deltaTime * 1000);
     Context_ConfigureTitle(scl(titleBuffer));
@@ -180,11 +177,7 @@ void App_Terminate(int exitCode, char *exitMessage)
     (void)exitMessage;
 
     Physics_Terminate();
-
-    if (sceneRenderer != NULL)
-    {
-        RendererScene_Destroy(sceneRenderer);
-    }
+    Renderer_Terminate();
 
     if (window != NULL)
     {

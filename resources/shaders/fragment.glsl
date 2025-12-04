@@ -6,6 +6,8 @@ in vec3 oVertNormal;
 
 uniform vec3 camPosition;
 uniform vec3 camRotation;
+uniform vec3 camSize;
+uniform bool camIsPerspective;
 
 uniform sampler2D matDiffuseMap;
 uniform bool matHasDiffuseMap;
