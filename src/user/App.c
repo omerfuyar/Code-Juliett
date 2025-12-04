@@ -13,18 +13,31 @@
 #define TEST_OBJECT_COUNT 16
 #define TEST_VSYNC false
 #define TEST_FULL_SCREEN false
-#define TEST_GRAVITY_M 0.0f /*-MATHS_GRAVITY*/
+#define TEST_GRAVITY_M -MATHS_GRAVITY
 #define TEST_DRAG 0.0f
 #define TEST_ELASTICITY 1.0f
-#define TEST_OBJECT_SPEED_LIMIT 50
 
 struct TEST_DATA
 {
+    RJGlobal_Size count;
     Vector3 positions[TEST_OBJECT_COUNT];
     Vector3 rotations[TEST_OBJECT_COUNT];
     Vector3 scales[TEST_OBJECT_COUNT];
     PhysicsComponent physicsComponents[TEST_OBJECT_COUNT];
+    bool actives[TEST_OBJECT_COUNT];
 } testObjectDatas = {0};
+
+typedef RJGlobal_Index TestEntity;
+
+TestEntity TestEntity_Create(Vector3 position, Vector3 rotation, Vector3 scale, PhysicsComponent physics)
+{
+    testObjectDatas.positions[testObjectDatas.count] = position;
+    testObjectDatas.rotations[testObjectDatas.count] = rotation;
+    testObjectDatas.scales[testObjectDatas.count] = scale;
+    testObjectDatas.physicsComponents[testObjectDatas.count] = physics;
+    testObjectDatas.actives[testObjectDatas.count] = true;
+    return testObjectDatas.count++;
+}
 
 struct TEST_CAMERA
 {
@@ -68,7 +81,8 @@ void App_Setup(int argc, char **argv)
 
     Physics_Initialize(TEST_OBJECT_COUNT, (Vector3 *)testObjectDatas.positions, TEST_DRAG, TEST_GRAVITY_M, TEST_ELASTICITY);
 
-    testObjectDatas.physicsComponents[0] = Physics_ComponentCreate(0, Vector3_One, 1.0f, false);
+    TestEntity_Create(Vector3_Zero, Vector3_Zero, Vector3_One, Physics_ComponentCreate(0, Vector3_One, 1.0f, false));
+    TestEntity_Create(Vector3_New(0.0f, -10.0f, 0.0f), Vector3_Zero, Vector3_One, Physics_ComponentCreate(1, Vector3_Scale(Vector3_One, 5.0f), 1.0f, true));
 
     camera.position = Vector3_New(0.0f, 0.0f, 5.0f);
     camera.rotation = Vector3_New(-45.0f, -90.0f, 0.0f);
@@ -147,6 +161,7 @@ void App_Loop(float deltaTime)
     // access collision data if needed by Physics_IsColliding(...)
 
     Physics_ResolveCollisions();
+
     RendererScene_Update(sceneRenderer);
 
     // rendering
