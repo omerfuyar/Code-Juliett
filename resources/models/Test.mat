@@ -7,6 +7,7 @@ Ke 0.000000 0.000000 0.000000 # Emissive color
 Ni 1.450000                   # Optical density
 d 1.00000                     # Dissolve (transparency)
 illum 2                       # Illumination model
+map_Kd Test.png
 
 newmtl planeMat               # Material name 
 Ns 323.999994                 # Specular exponent
