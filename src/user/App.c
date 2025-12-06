@@ -12,9 +12,9 @@
 #define TEST_OBJECT_COUNT 16
 #define TEST_VSYNC false
 #define TEST_FULL_SCREEN false
-#define TEST_GRAVITY /*-MATHS_GRAVITY*/ 0.0f
+#define TEST_GRAVITY -MATHS_GRAVITY
 #define TEST_DRAG 0.0f
-#define TEST_ELASTICITY 1.0f
+#define TEST_ELASTICITY 0.0f
 
 struct TEST_CAMERA
 {
@@ -68,11 +68,15 @@ void App_Setup(int argc, char **argv)
     Context_Configure(scl("Juliette"), TEST_WINDOW_SIZE, TEST_VSYNC, TEST_FULL_SCREEN, NULL);
 
     Input_Initialize(window);
-    Renderer_Initialize(window, 4);
     Physics_Initialize(TEST_OBJECT_COUNT, (Vector3 *)testEntityDatas.positions, TEST_DRAG, TEST_GRAVITY, TEST_ELASTICITY);
+    Renderer_Initialize(window, 4);
 
     Renderer_ConfigureShaders(scl("shaders" RJGLOBAL_PATH_DELIMETER_STR "vertex.glsl"),
                               scl("shaders" RJGLOBAL_PATH_DELIMETER_STR "fragment.glsl"));
+
+    RendererDebug_Initialize(scl("shaders" RJGLOBAL_PATH_DELIMETER_STR "debugVertex.glsl"),
+                             scl("shaders" RJGLOBAL_PATH_DELIMETER_STR "debugFragment.glsl"),
+                             256);
 
     camera.position = Vector3_New(0.0f, 0.0f, 5.0f);
     camera.rotation = Vector3_New(-45.0f, -90.0f, 0.0f);
@@ -114,10 +118,10 @@ void App_Loop(float deltaTime)
 
     camera.size -= Input_GetMouseScroll();
 
-    for (RJGlobal_Size i = 0; i < TEST_OBJECT_COUNT; i++)
-    {
-        testEntityDatas.rotations[i].y += deltaTime;
-    }
+    // for (RJGlobal_Size i = 0; i < TEST_OBJECT_COUNT; i++)
+    //{
+    //     testEntityDatas.rotations[i].y += deltaTime;
+    // }
 
     if (Input_GetMouseButton(InputMouseButtonCode_Left, InputState_Pressed))
     {
