@@ -40,7 +40,7 @@ struct TEST_DATA
     bool actives[TEST_OBJECT_COUNT];
 } testEntityDatas = {0};
 
-typedef RJGlobal_Index TestEntity;
+typedef RJGlobal_Size TestEntity;
 
 TestEntity TestEntity_Create(Vector3 position, Vector3 rotation, Vector3 scale, PhysicsComponent body, RendererComponent renderable)
 {
@@ -92,10 +92,10 @@ void App_Setup(int argc, char **argv)
 
     // RendererComponent *component = RendererBatch_CreateComponent(testBatch, &testEntityDatas.positions[0], &testEntityDatas.rotations[0], &testEntityDatas.scales[0]);
 
-    RendererBatch testBatch = Renderer_BatchCreate(scl("models" RJGLOBAL_PATH_DELIMETER_STR "Pistol.mdl"), TEST_OBJECT_COUNT);
+    RendererBatch testBatch = Renderer_BatchCreate(scl("models" RJGLOBAL_PATH_DELIMETER_STR "Test.mdl"), NULL, TEST_OBJECT_COUNT, &testEntityDatas.positions[0], &testEntityDatas.rotations[0], &testEntityDatas.scales[0]);
 
-    TestEntity_Create(Vector3_Zero, Vector3_Zero, Vector3_One, Physics_ComponentCreate(0, Vector3_One, 1.0f, false), Renderer_ComponentCreate(0, testBatch, &testEntityDatas.positions[0], &testEntityDatas.rotations[0], &testEntityDatas.scales[0]));
-    TestEntity_Create(Vector3_New(0.0f, -10.0f, 0.0f), Vector3_Zero, Vector3_One, Physics_ComponentCreate(1, Vector3_Scale(Vector3_One, 5.0f), 1.0f, true), Renderer_ComponentCreate(0, testBatch, &testEntityDatas.positions[0], &testEntityDatas.rotations[0], &testEntityDatas.scales[0]));
+    TestEntity_Create(Vector3_Zero, Vector3_Zero, Vector3_One, Physics_ComponentCreate(0, Vector3_One, 1.0f, false), Renderer_ComponentCreate(0, testBatch));
+    TestEntity_Create(Vector3_New(0.0f, -10.0f, 0.0f), Vector3_Zero, Vector3_One, Physics_ComponentCreate(1, Vector3_Scale(Vector3_One, 5.0f), 1.0f, true), Renderer_ComponentCreate(1, testBatch));
 }
 
 void App_Loop(float deltaTime)

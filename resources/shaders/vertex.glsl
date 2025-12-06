@@ -11,9 +11,7 @@ uniform mat4 camViewMatrix;
 
 layout(std140) uniform modelMatrices
 {
-    vec3 modelPositions[RENDERER_BATCH_MAX_OBJECT_COUNT];
-    vec3 modelRotations[RENDERER_BATCH_MAX_OBJECT_COUNT];
-    vec3 modelScales[RENDERER_BATCH_MAX_OBJECT_COUNT];
+    mat4 models[RENDERER_BATCH_MAX_OBJECT_COUNT];
 };
 
 out vec2 oVertUv;
