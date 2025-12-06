@@ -12,7 +12,7 @@
 #define TEST_OBJECT_COUNT 16
 #define TEST_VSYNC false
 #define TEST_FULL_SCREEN false
-#define TEST_GRAVITY_M -MATHS_GRAVITY
+#define TEST_GRAVITY /*-MATHS_GRAVITY*/ 0.0f
 #define TEST_DRAG 0.0f
 #define TEST_ELASTICITY 1.0f
 
@@ -69,7 +69,7 @@ void App_Setup(int argc, char **argv)
 
     Input_Initialize(window);
     Renderer_Initialize(window, 4);
-    Physics_Initialize(TEST_OBJECT_COUNT, (Vector3 *)testEntityDatas.positions, TEST_DRAG, TEST_GRAVITY_M, TEST_ELASTICITY);
+    Physics_Initialize(TEST_OBJECT_COUNT, (Vector3 *)testEntityDatas.positions, TEST_DRAG, TEST_GRAVITY, TEST_ELASTICITY);
 
     Renderer_ConfigureShaders(scl("shaders" RJGLOBAL_PATH_DELIMETER_STR "vertex.glsl"),
                               scl("shaders" RJGLOBAL_PATH_DELIMETER_STR "fragment.glsl"));
