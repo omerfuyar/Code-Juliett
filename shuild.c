@@ -31,10 +31,10 @@ int main(int argc, char **argv)
     if (argc > 3)
     {
         SHU_CompilerSetFlags("-O3");
-        SHU_ModuleBegin("ShuildRomeo");
-        SHU_ModuleAddSourcefile("dependencies/Romeo/ShuildRomeo.c");
-        SHU_ModuleCompile("dependencies/Romeo/", SHUM_MODULE_EXECUTABLE);
-        SHU_Run(".\\dependencies\\Romeo\\ShuildRomeo.exe %s %s", argv[1], argv[2]);
+        SHU_ModuleBegin("shuild");
+        SHU_ModuleAddSourcefile("dependencies/Code-Romeo/shuild.c");
+        SHU_ModuleCompile("dependencies/Code-Romeo/", SHUM_MODULE_EXECUTABLE);
+        SHU_Run(".\\dependencies\\Code-Romeo\\shuild.exe %s %s %s", argv[1], argv[2], argc > 4 ? "all" : "");
     }
 
     char *compilerFlags = NULL;
@@ -75,11 +75,11 @@ int main(int argc, char **argv)
     SHU_ModuleBegin("Code-Juliett");
 
     SHU_ModuleAddIncludeDirectory("include/");
-    SHU_ModuleAddIncludeDirectory("dependencies/Romeo/include/");
+    SHU_ModuleAddIncludeDirectory("dependencies/Code-Romeo/include/");
 
     SHU_ModuleAddSourceDirectory("src/");
 
-    SHU_ModuleAddLibraryDirectory(isDebug ? "dependencies/Romeo/build/debug/" : "dependencies/Romeo/build/release/");
+    SHU_ModuleAddLibraryDirectory(isDebug ? "dependencies/Code-Romeo/build/debug/" : "dependencies/Code-Romeo/build/release/");
 
     SHU_ModuleLinkLibrary("Code-Romeo");
     SHU_ModuleLinkLibrary("cglm");
