@@ -6,6 +6,7 @@
 
 #include "systems/Renderer.h"
 #include "systems/Physics.h"
+#include "systems/Audio.h"
 #include "systems/Input.h"
 
 #define TEST_WINDOW_SIZE Vector2Int_New(1080, 720)
@@ -14,43 +15,46 @@
 #define TEST_FULL_SCREEN false
 #define TEST_GRAVITY -MATHS_GRAVITY
 #define TEST_DRAG 0.0f
-#define TEST_ELASTICITY 0.0f
-
-struct TEST_CAMERA
-{
-    Vector3 position;
-    Vector3 rotation;
-    float size;
-    float nearClipPlane;
-    float farClipPlane;
-    bool isPerspective;
-
-    float speed;
-    float rotationSpeed;
-} camera = {0};
+#define TEST_ELASTICITY 1.0f
 
 struct TEST_DATA
 {
     RJGlobal_Size count;
+
     Vector3 positions[TEST_OBJECT_COUNT];
     Vector3 rotations[TEST_OBJECT_COUNT];
     Vector3 scales[TEST_OBJECT_COUNT];
+
     PhysicsComponent physicsComponents[TEST_OBJECT_COUNT];
     RendererComponent rendererComponents[TEST_OBJECT_COUNT];
-    bool actives[TEST_OBJECT_COUNT];
-} testEntityDatas = {0};
+    AudioComponent audioComponents[TEST_OBJECT_COUNT];
+
+    struct TEST_CAMERA
+    {
+        Vector3 position;
+        Vector3 rotation;
+        float size;
+        float nearClipPlane;
+        float farClipPlane;
+        bool isPerspective;
+
+        float speed;
+        float rotationSpeed;
+    } camera;
+} TED = {0}; // test entity datas
+
+// float timer = 0.0f;
 
 typedef RJGlobal_Size TestEntity;
 
 TestEntity TestEntity_Create(Vector3 position, Vector3 rotation, Vector3 scale, PhysicsComponent body, RendererComponent renderable)
 {
-    testEntityDatas.positions[testEntityDatas.count] = position;
-    testEntityDatas.rotations[testEntityDatas.count] = rotation;
-    testEntityDatas.scales[testEntityDatas.count] = scale;
-    testEntityDatas.physicsComponents[testEntityDatas.count] = body;
-    testEntityDatas.actives[testEntityDatas.count] = true;
-    testEntityDatas.rendererComponents[testEntityDatas.count] = renderable;
-    return testEntityDatas.count++;
+    TED.positions[TED.count] = position;
+    TED.rotations[TED.count] = rotation;
+    TED.scales[TED.count] = scale;
+    TED.physicsComponents[TED.count] = body;
+    TED.rendererComponents[TED.count] = renderable;
+    return TED.count++;
 }
 
 ContextWindow *window = NULL;
@@ -61,6 +65,10 @@ void App_Setup(int argc, char **argv)
     (void)argc;
     (void)argv;
 
+    RJGlobal_MemorySet(TED.physicsComponents, sizeof(PhysicsComponent) * TEST_OBJECT_COUNT, RJGLOBAL_INDEX_INVALID);
+    RJGlobal_MemorySet(TED.rendererComponents, sizeof(RendererComponent) * TEST_OBJECT_COUNT, RJGLOBAL_INDEX_INVALID);
+    RJGlobal_MemorySet(TED.audioComponents, sizeof(AudioComponent) * TEST_OBJECT_COUNT, RJGLOBAL_INDEX_INVALID);
+
     srand((unsigned int)time(NULL));
 
     window = Context_Initialize();
@@ -68,26 +76,24 @@ void App_Setup(int argc, char **argv)
     Context_Configure(scl("Juliette"), TEST_WINDOW_SIZE, TEST_VSYNC, TEST_FULL_SCREEN, NULL);
 
     Input_Initialize(window);
-    Physics_Initialize(TEST_OBJECT_COUNT, (Vector3 *)testEntityDatas.positions, TEST_DRAG, TEST_GRAVITY, TEST_ELASTICITY);
+    Physics_Initialize(TEST_OBJECT_COUNT, (Vector3 *)TED.positions, TEST_DRAG, TEST_GRAVITY, TEST_ELASTICITY);
+    Audio_Initialize(TEST_OBJECT_COUNT, (Vector3 *)TED.positions);
     Renderer_Initialize(window, 4);
 
     Renderer_ConfigureShaders(scl("shaders" RJGLOBAL_PATH_DELIMETER_STR "vertex.glsl"),
                               scl("shaders" RJGLOBAL_PATH_DELIMETER_STR "fragment.glsl"));
 
-    RendererDebug_Initialize(scl("shaders" RJGLOBAL_PATH_DELIMETER_STR "debugVertex.glsl"),
-                             scl("shaders" RJGLOBAL_PATH_DELIMETER_STR "debugFragment.glsl"),
-                             256);
+    TED.camera.position = Vector3_New(0.0f, 0.0f, 5.0f);
+    TED.camera.rotation = Vector3_New(-45.0f, -90.0f, 0.0f);
+    TED.camera.speed = 10.0f;
+    TED.camera.rotationSpeed = 75.0f;
+    TED.camera.size = 90.0f;
+    TED.camera.nearClipPlane = 0.01f;
+    TED.camera.farClipPlane = 1000.0f;
+    TED.camera.isPerspective = true;
 
-    camera.position = Vector3_New(0.0f, 0.0f, 5.0f);
-    camera.rotation = Vector3_New(-45.0f, -90.0f, 0.0f);
-    camera.speed = 10.0f;
-    camera.rotationSpeed = 75.0f;
-    camera.size = 90.0f;
-    camera.nearClipPlane = 0.01f;
-    camera.farClipPlane = 1000.0f;
-    camera.isPerspective = true;
-
-    Renderer_ConfigureCamera(&camera.position, &camera.rotation, &camera.size, &camera.nearClipPlane, &camera.farClipPlane, &camera.isPerspective);
+    Renderer_ConfigureCamera(&TED.camera.position, &TED.camera.rotation, &TED.camera.size, &TED.camera.nearClipPlane, &TED.camera.farClipPlane, &TED.camera.isPerspective);
+    Audio_ConfigureListener(&TED.camera.position, &TED.camera.rotation);
 
     // ListArray pistolMaterials = RendererMaterial_CreateFromFile(scl("models" RJGLOBAL_PATH_DELIMETER_STR "Pistol.mat"));
     // RendererModel *pistolMdl = RendererModel_Create(scl("models" RJGLOBAL_PATH_DELIMETER_STR "Pistol.mdl"), &pistolMaterials, Vector3_Zero, Vector3_Zero, Vector3_One);
@@ -96,10 +102,30 @@ void App_Setup(int argc, char **argv)
 
     // RendererComponent *component = RendererBatch_CreateComponent(testBatch, &testEntityDatas.positions[0], &testEntityDatas.rotations[0], &testEntityDatas.scales[0]);
 
-    RendererBatch testBatch = Renderer_BatchCreate(scl("models" RJGLOBAL_PATH_DELIMETER_STR "Test.mdl"), NULL, TEST_OBJECT_COUNT, &testEntityDatas.positions[0], &testEntityDatas.rotations[0], &testEntityDatas.scales[0]);
+    Vector3 transformOffset[3] = {Vector3_Zero, Vector3_Zero, Vector3_NewN(0.5f)};
+    RendererBatch testBatch = Renderer_BatchCreate(scl("models" RJGLOBAL_PATH_DELIMETER_STR "Test.mdl"), transformOffset, TEST_OBJECT_COUNT, TED.positions, TED.rotations, TED.scales);
 
-    TestEntity_Create(Vector3_Zero, Vector3_Zero, Vector3_One, Physics_ComponentCreate(0, Vector3_One, 1.0f, false), Renderer_ComponentCreate(0, testBatch));
-    TestEntity_Create(Vector3_New(0.0f, -10.0f, 0.0f), Vector3_Zero, Vector3_One, Physics_ComponentCreate(1, Vector3_Scale(Vector3_One, 5.0f), 1.0f, true), Renderer_ComponentCreate(1, testBatch));
+    TestEntity_Create(Vector3_New(0.0f, -10.0f, 0.0f),
+                      Vector3_Zero,
+                      Vector3_One,
+                      Physics_ComponentCreate(TED.count, Vector3_One, 1.0f, true),
+                      Renderer_ComponentCreate(TED.count, testBatch));
+
+    TestEntity_Create(Vector3_Zero,
+                      Vector3_Zero,
+                      Vector3_One,
+                      Physics_ComponentCreate(TED.count, Vector3_One, 1.0f, false),
+                      Renderer_ComponentCreate(TED.count, testBatch));
+
+    TestEntity_Create(Vector3_New(0.0f, 10.0f, 0.0f),
+                      Vector3_Zero,
+                      Vector3_One,
+                      Physics_ComponentCreate(TED.count, Vector3_One, 5.0f, false),
+                      Renderer_ComponentCreate(TED.count, testBatch));
+
+    TED.audioComponents[1] = Audio_ComponentCreate(1, scl("audio" RJGLOBAL_PATH_DELIMETER_STR "Test.mp3"));
+    Audio_ComponentSetPlaying(TED.audioComponents[1], true);
+    Audio_ComponentRewind(TED.audioComponents[1], 0.2f);
 }
 
 void App_Loop(float deltaTime)
@@ -113,13 +139,13 @@ void App_Loop(float deltaTime)
 
     if (Input_GetKey(InputKeyCode_R, InputState_Down))
     {
-        camera.isPerspective = !camera.isPerspective;
+        TED.camera.isPerspective = !TED.camera.isPerspective;
     }
 
-    camera.size -= Input_GetMouseScroll();
+    TED.camera.size -= Input_GetMouseScroll();
 
     // for (RJGlobal_Size i = 0; i < TEST_OBJECT_COUNT; i++)
-    //{
+    // {
     //     testEntityDatas.rotations[i].y += deltaTime;
     // }
 
@@ -130,14 +156,14 @@ void App_Loop(float deltaTime)
         Vector2Int mousePositionDelta = Input_GetMousePositionDelta();
         Vector3 movementVector = Input_GetMovementVector();
 
-        camera.rotation.y += (float)mousePositionDelta.x * camera.rotationSpeed * deltaTime;
-        camera.rotation.x -= (float)mousePositionDelta.y * camera.rotationSpeed * deltaTime;
-        camera.rotation.x = Maths_Clamp(camera.rotation.x, -89.0f, 89.0f);
+        TED.camera.rotation.y += (float)mousePositionDelta.x * TED.camera.rotationSpeed * deltaTime;
+        TED.camera.rotation.x -= (float)mousePositionDelta.y * TED.camera.rotationSpeed * deltaTime;
+        TED.camera.rotation.x = Maths_Clamp(TED.camera.rotation.x, -89.0f, 89.0f);
 
         Vector3 direction = Vector3_Normalized(Vector3_New(
-            Maths_Cos(camera.rotation.x) * Maths_Cos(camera.rotation.y),
-            Maths_Sin(camera.rotation.x),
-            Maths_Cos(camera.rotation.x) * Maths_Sin(camera.rotation.y)));
+            Maths_Cos(TED.camera.rotation.x) * Maths_Cos(TED.camera.rotation.y),
+            Maths_Sin(TED.camera.rotation.x),
+            Maths_Cos(TED.camera.rotation.x) * Maths_Sin(TED.camera.rotation.y)));
 
         Vector3 right = Vector3_Normalized(Vector3_Cross(direction, Vector3_Up));
 
@@ -148,7 +174,10 @@ void App_Loop(float deltaTime)
         if (Vector3_Magnitude(move) > 0.0f)
         {
             move = Vector3_Normalized(move);
-            camera.position = Vector3_Add(camera.position, Vector3_Scale(move, camera.speed * deltaTime * (Input_GetKey(InputKeyCode_LeftShift, InputState_Pressed) ? 2.0f : 1.0f)));
+            TED.camera.position =
+                Vector3_Add(TED.camera.position,
+                            Vector3_Scale(move,
+                                          TED.camera.speed * deltaTime * (Input_GetKey(InputKeyCode_LeftShift, InputState_Pressed) ? 2.0f : 1.0f)));
         }
     }
     else
@@ -164,7 +193,14 @@ void App_Loop(float deltaTime)
 
     // access collision data if needed by Physics_IsColliding(...)
 
+    // if (Physics_IsColliding(TED.physicsComponents[1], TED.physicsComponents[2], NULL))
+    // {
+    //     RJGlobal_DebugWarning("test collision");
+    // }
+
     Physics_ResolveCollisions();
+
+    Audio_Update();
 
     // rendering
     Renderer_Update();
