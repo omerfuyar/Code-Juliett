@@ -1,7 +1,7 @@
 #define SHUC_NO_RUN_LOG
 #define SHUC_MAX_COMMAND_BUFFER_SIZE 8192
 #define SHUILD_IMPLEMENTATION
-#include "shuild.h"
+#include "dependencies/shuild/shuild.h"
 
 int main(int argc, char **argv)
 {

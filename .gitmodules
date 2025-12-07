@@ -1,11 +1,9 @@
-[submodule "Code-Romeo"]
+[submodule "dependencies/shuild"]
+	path = dependencies/shuild
+	url = https://github.com/omerfuyar/shuild.git
+[submodule "dependencies/Code-Romeo"]
 	path = dependencies/Code-Romeo
 	url = https://github.com/omerfuyar/Code-Romeo.git
-
-[submodule "shuild"]
-	path = dependencies/Code-Romeo
-	url = https://github.com/omerfuyar/Code-Romeo.git
-
-[submodule "tecter"]
+[submodule "dependencies/tecter"]
 	path = dependencies/tecter
 	url = https://github.com/omerfuyar/tecter.git
