@@ -2,6 +2,12 @@
 #include "utilities/Timer.h"
 #include <time.h>
 
+TestResult g_testResult = {0, 0, 0};
+
+// Test timing tolerances - generous to account for system variations
+#define MIN_SLEEP_TOLERANCE_MS 40.0f
+#define MAX_SLEEP_TOLERANCE_MS 200.0f
+
 #if defined(_WIN32)
 #include <windows.h>
 #define sleep_ms(ms) Sleep(ms)
@@ -62,8 +68,8 @@ void test_timer_elapsed_milliseconds()
     
     float elapsed = Timer_GetElapsedMilliseconds(&timer);
     
-    TEST_ASSERT(elapsed >= 40.0f, "Elapsed time should be at least 40ms");
-    TEST_ASSERT(elapsed < 200.0f, "Elapsed time should be less than 200ms");
+    TEST_ASSERT(elapsed >= MIN_SLEEP_TOLERANCE_MS, "Elapsed time should be at least MIN_SLEEP_TOLERANCE_MS");
+    TEST_ASSERT(elapsed < MAX_SLEEP_TOLERANCE_MS, "Elapsed time should be less than MAX_SLEEP_TOLERANCE_MS");
     
     Timer_Destroy(&timer);
 }
@@ -164,7 +170,7 @@ void test_timer_precision()
     float elapsed = Timer_GetElapsedMilliseconds(&timer);
     
     TEST_ASSERT(elapsed >= 80.0f, "Timer should measure at least 80ms");
-    TEST_ASSERT(elapsed <= 200.0f, "Timer should not measure more than 200ms");
+    TEST_ASSERT(elapsed <= MAX_SLEEP_TOLERANCE_MS, "Timer should not measure more than MAX_SLEEP_TOLERANCE_MS");
     
     Timer_Destroy(&timer);
 }

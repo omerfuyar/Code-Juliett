@@ -2,6 +2,8 @@
 #include "utilities/HashMap.h"
 #include <string.h>
 
+TestResult g_testResult = {0, 0, 0};
+
 void test_hashmap_create_destroy()
 {
     HashMap map = HashMap_Create("int", sizeof(int), 10);

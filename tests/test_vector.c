@@ -2,6 +2,8 @@
 #include "utilities/Vector.h"
 #include <math.h>
 
+TestResult g_testResult = {0, 0, 0};
+
 #define EPSILON 0.0001f
 
 void test_vector2_creation()

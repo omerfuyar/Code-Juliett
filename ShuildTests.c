@@ -47,7 +47,10 @@ int main(int argc, char **argv)
         }
         else if (strcmp(argv[1], "clang") == 0 || strcmp(argv[1], "gcc") == 0)
         {
-            compilerFlags = "-g -O0 -Wall -Werror -Wextra -Wshadow -Wpedantic -Wconversion -Wnull-dereference -Wunused-result -Wno-strict-prototypes -Wno-gnu-zero-variadic-macro-arguments -Wno-unused-value -fstack-protector-strong ";
+            compilerFlags = "-g -O0 -Wall -Werror -Wextra -Wshadow -Wpedantic "
+                           "-Wconversion -Wnull-dereference -Wunused-result "
+                           "-Wno-strict-prototypes -Wno-gnu-zero-variadic-macro-arguments "
+                           "-Wno-unused-value -fstack-protector-strong ";
         }
         else
         {

@@ -10,11 +10,14 @@ typedef struct TestResult
     int failed;
 } TestResult;
 
-static TestResult g_testResult = {0, 0, 0};
+// Each test file should define this before including the framework
+// #define TEST_RESULT_INSTANCE
+// static TestResult g_testResult = {0, 0, 0};
 
 #define TEST_ASSERT(condition, message)                                  \
     do                                                                   \
     {                                                                    \
+        extern TestResult g_testResult;                                  \
         g_testResult.total++;                                            \
         if (!(condition))                                                \
         {                                                                \
@@ -43,6 +46,7 @@ static TestResult g_testResult = {0, 0, 0};
 
 static void test_print_summary(const char *suiteName)
 {
+    extern TestResult g_testResult;
     printf("\n========================================\n");
     printf("Test Suite: %s\n", suiteName);
     printf("========================================\n");
@@ -63,5 +67,6 @@ static void test_print_summary(const char *suiteName)
 
 static int test_get_result()
 {
+    extern TestResult g_testResult;
     return g_testResult.failed > 0 ? 1 : 0;
 }

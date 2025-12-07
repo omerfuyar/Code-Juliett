@@ -2,6 +2,8 @@
 #include "utilities/String.h"
 #include <string.h>
 
+TestResult g_testResult = {0, 0, 0};
+
 void test_string_create_copy()
 {
     const char *testStr = "Hello, World!";

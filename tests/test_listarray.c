@@ -2,6 +2,8 @@
 #include "utilities/ListArray.h"
 #include <string.h>
 
+TestResult g_testResult = {0, 0, 0};
+
 void test_listarray_create_destroy()
 {
     ListArray list = ListArray_Create("int", sizeof(int), 5);
