@@ -4,3 +4,6 @@
 [submodule "dependencies/Code-Romeo"]
 	path = dependencies/Code-Romeo
 	url = https://github.com/omerfuyar/Code-Romeo.git
+[submodule "dependencies/tecter"]
+	path = dependencies/tecter
+	url = https://github.com/omerfuyar/tecter.git
