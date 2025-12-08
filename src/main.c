@@ -1,5 +1,5 @@
 #include "RJGlobal.h"
-#include "user/App.h"
+#include "app/App.h"
 
 /*
     This file is just a connector between user callbacks and the framework.
