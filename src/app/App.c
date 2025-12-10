@@ -6,8 +6,8 @@
 #include "systems/Input.h"
 
 #define TEST_WINDOW_SIZE Vector2Int_New(1080, 720)
-#define TEST_GRID_X 2
-#define TEST_GRID_Y 2
+#define TEST_GRID_X 4
+#define TEST_GRID_Y 4
 #define TEST_OBJECT_COUNT TEST_GRID_X *TEST_GRID_Y + 1
 #define TEST_VSYNC false
 #define TEST_FULL_SCREEN false
@@ -39,24 +39,32 @@ struct TEST_DATA
     } camera;
 } TED = {0}; // test entity datas
 
+#define tedPosition(entity) TED.positions[entity]
+#define tedRotation(entity) TED.rotations[entity]
+#define tedScale(entity) TED.scales[entity]
+
+#define tedRendererComponent(entity) TED.rendererComponents[entity]
+#define tedRendererBatch(entity) TED.rendererBatches[entity]
+
 // float timer = 0.0f;
 
 typedef RJGlobal_Size TestEntity;
 
 TestEntity TestEntity_Create(Vector3 position, Vector3 rotation, Vector3 scale, RendererBatch batch)
 {
-    TED.positions[TED.count] = position;
-    TED.rotations[TED.count] = rotation;
-    TED.scales[TED.count] = scale;
-    TED.rendererComponents[TED.count] = Renderer_ComponentCreate(TED.count, batch);
-    TED.rendererBatches[TED.count] = batch;
+    tedPosition(TED.count) = position;
+    tedRotation(TED.count) = rotation;
+    tedScale(TED.count) = scale;
+    tedRendererComponent(TED.count) = Renderer_ComponentCreate(TED.count, batch);
+    tedRendererBatch(TED.count) = batch;
 
-    RJGlobal_DebugWarning("entity : %u, batch %u, renderable : %u", TED.count, batch, TED.rendererComponents[TED.count]);
+    RJGlobal_DebugWarning("entity : %u, batch %u, renderable : %u", TED.count, batch, tedRendererComponent(TED.count));
 
     return TED.count++;
 }
 
 ContextWindow *window = NULL;
+TestEntity mark;
 
 void App_Setup(int argc, char **argv)
 {
@@ -96,10 +104,10 @@ void App_Setup(int argc, char **argv)
     RendererBatch markBatch = Renderer_BatchCreate(scl("models" RJGLOBAL_PATH_DELIMETER_STR "Mark.mdl"), NULL, 1, TED.positions, TED.rotations, TED.scales);
     RendererBatch testBatch = Renderer_BatchCreate(scl("models" RJGLOBAL_PATH_DELIMETER_STR "Test.mdl"), NULL, TEST_OBJECT_COUNT - 1, TED.positions, TED.rotations, TED.scales);
 
-    TestEntity_Create(Vector3_New(0.0f, 0.0f, -1.0f),
-                      Vector3_Zero,
-                      Vector3_One,
-                      markBatch);
+    mark = TestEntity_Create(Vector3_New(0.0f, 0.0f, -1.0f),
+                             Vector3_Zero,
+                             Vector3_One,
+                             markBatch);
 
     for (RJGlobal_Size y = 0; y < TEST_GRID_Y; y++)
     {
@@ -157,6 +165,7 @@ void App_Loop(float deltaTime)
 
     Renderer_Update();
     Vector3 mouseWorldPosition = Renderer_ScreenToWorldSpace(Input_GetMousePosition(), Maths_Abs(TED.camera.position.z));
+    tedPosition(mark) = Vector3_New(Maths_Round(mouseWorldPosition.x), Maths_Round(mouseWorldPosition.y), 0.0f);
 
     Renderer_Render();
 
