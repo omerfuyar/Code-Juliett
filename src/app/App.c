@@ -58,7 +58,7 @@ TestEntity TestEntity_Create(Vector3 position, Vector3 rotation, Vector3 scale, 
     tedRendererComponent(TED.count) = Renderer_ComponentCreate(TED.count, batch);
     tedRendererBatch(TED.count) = batch;
 
-    RJGlobal_DebugWarning("entity : %u, batch %u, renderable : %u", TED.count, batch, tedRendererComponent(TED.count));
+    // RJGlobal_DebugWarning("entity : %u, batch %u, renderable : %u", TED.count, batch, tedRendererComponent(TED.count));
 
     return TED.count++;
 }
@@ -185,6 +185,13 @@ void App_Terminate(int exitCode, char *exitMessage)
     (void)exitCode;
     (void)exitMessage;
 
-    Renderer_Terminate();
-    Context_Terminate();
+    if (Renderer_IsInitialized())
+    {
+        Renderer_Terminate();
+    }
+
+    if (Context_IsInitialized())
+    {
+        Context_Terminate();
+    }
 }

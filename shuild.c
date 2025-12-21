@@ -34,7 +34,11 @@ int main(int argc, char **argv)
         SHU_ModuleBegin("shuild");
         SHU_ModuleAddSourcefile("dependencies/Code-Romeo/shuild.c");
         SHU_ModuleCompile("dependencies/Code-Romeo/", SHUM_MODULE_EXECUTABLE);
+#if SHUM_HOST_PLATFORM == SHUM_PLATFORM_WINDOWS
         SHU_Run(".\\dependencies\\Code-Romeo\\shuild.exe %s %s %s", argv[1], argv[2], argc > 4 ? "all" : "");
+#else
+        SHU_Run("./dependencies/Code-Romeo/shuild %s %s %s", argv[1], argv[2], argc > 4 ? "all" : "");
+#endif
     }
 
     char *compilerFlags = NULL;
@@ -92,6 +96,9 @@ int main(int argc, char **argv)
     SHU_ModuleLinkLibrary("shell32");
 #elif SHUM_HOST_PLATFORM == SHUM_PLATFORM_LINUX
     SHU_ModuleLinkLibrary("dl");
+    SHU_ModuleLinkLibrary("m");
+    SHU_ModuleLinkLibrary("X11");
+    SHU_ModuleLinkLibrary("pthread");
 #elif SHUM_HOST_PLATFORM == SHUM_PLATFORM_MACOS
     SHU_ModuleLinkLibrary("Cocoa");
     SHU_ModuleLinkLibrary("OpenGL");
