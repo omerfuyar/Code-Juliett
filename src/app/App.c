@@ -9,11 +9,12 @@
 #define TEST_GRID_X 4
 #define TEST_GRID_Y 4
 #define TEST_OBJECT_COUNT TEST_GRID_X *TEST_GRID_Y + 1
-#define TEST_VSYNC false
-#define TEST_FULL_SCREEN false
+#define TEST_VSYNC true
+#define TEST_FULL_SCREEN true
 #define TEST_GRAVITY -MATHS_GRAVITY
 #define TEST_DRAG 0.0f
 #define TEST_ELASTICITY 1.0f
+#define TEST_TIME 10.0f
 
 struct TEST_DATA
 {
@@ -46,11 +47,12 @@ struct TEST_DATA
 #define tedRendererComponent(entity) TED.rendererComponents[entity]
 #define tedRendererBatch(entity) TED.rendererBatches[entity]
 
-// float timer = 0.0f;
+float testTimer = 0.0f;
+RJGlobal_Size testFrameCount = 0;
 
 typedef RJGlobal_Size TestEntity;
 
-TestEntity TestEntity_Create(Vector3 position, Vector3 rotation, Vector3 scale, RendererBatch batch)
+static TestEntity TestEntity_Create(Vector3 position, Vector3 rotation, Vector3 scale, RendererBatch batch)
 {
     tedPosition(TED.count) = position;
     tedRotation(TED.count) = rotation;
@@ -125,6 +127,7 @@ void App_Setup(int argc, char **argv)
 
 void App_Loop(float deltaTime)
 {
+    Context_Update();
     Input_Update();
 
     if (Input_GetKey(InputKeyCode_F, InputState_Down))
@@ -178,6 +181,13 @@ void App_Loop(float deltaTime)
              mouseWorldPosition.y,
              mouseWorldPosition.z);
     Context_ConfigureTitle(scl(titleBuffer));
+
+    testFrameCount++;
+    testTimer += deltaTime;
+    if (testTimer > TEST_TIME)
+    {
+        RJGlobal_DebugLog(true, "TEST", "Test time: %f, Average FPS: %f", testTimer, (float)testFrameCount / testTimer);
+    }
 }
 
 void App_Terminate(int exitCode, char *exitMessage)

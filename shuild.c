@@ -30,51 +30,33 @@ int main(int argc, char **argv)
 
     if (argc > 3)
     {
-        SHU_CompilerSetFlags("-O3");
+        SHU_CompilerOptimization(SHUM_COMPILER_OPTIMIZATION_HIGH);
+
         SHU_ModuleBegin("shuild");
-        SHU_ModuleAddSourcefile("dependencies/Code-Romeo/shuild.c");
+        SHU_ModuleAddSourceFile("dependencies/Code-Romeo/shuild.c");
         SHU_ModuleCompile("dependencies/Code-Romeo/", SHUM_MODULE_EXECUTABLE);
 #if SHUM_HOST_PLATFORM == SHUM_PLATFORM_WINDOWS
-        SHU_Run(".\\dependencies\\Code-Romeo\\shuild.exe %s %s %s", argv[1], argv[2], argc > 4 ? "all" : "");
+        SHU_Run(".\\dependencies\\Code-Romeo\\shuild.exe %s %s %s", argv[1], argv[2], argc > 4 ? argv[3] : "");
 #else
-        SHU_Run("./dependencies/Code-Romeo/shuild %s %s %s", argv[1], argv[2], argc > 4 ? "all" : "");
+        SHU_Run("./dependencies/Code-Romeo/shuild %s %s %s", argv[1], argv[2], argc > 4 ? argv[3] : "");
 #endif
     }
 
-    char *compilerFlags = NULL;
+    SHU_CompilerClearFlags();
 
     if (isDebug)
     {
-        if (strcmp(argv[1], "clang-cl") == 0 || strcmp(argv[1], "cl") == 0)
+        SHU_CompilerDebug();
+        SHU_CompilerWarning(SHUM_COMPILER_WARNING_HIGH, 1);
+        if (!strcmp(argv[1], "clang") || !strcmp(argv[1], "gcc"))
         {
-            compilerFlags = "/Zi /Od /W4 /permissive- /GS /WX /wd4324";
-        }
-        else if (strcmp(argv[1], "clang") == 0 || strcmp(argv[1], "gcc") == 0)
-        {
-            compilerFlags = "-g -O0 -Wall -Werror -Wextra -Wshadow -Wpedantic -Wconversion -Wnull-dereference -Wunused-result -Wno-strict-prototypes -Wno-gnu-zero-variadic-macro-arguments -Wno-unused-value -fstack-protector-strong ";
-        }
-        else
-        {
-            return 3;
+            SHU_CompilerAddFlags("-Wno-gnu-zero-variadic-macro-arguments -Wno-format-nonliteral");
         }
     }
     else
     {
-        if (strcmp(argv[1], "clang-cl") == 0 || strcmp(argv[1], "cl") == 0)
-        {
-            compilerFlags = "/O2 /DNDEBUG";
-        }
-        else if (strcmp(argv[1], "clang") == 0 || strcmp(argv[1], "gcc") == 0)
-        {
-            compilerFlags = "-O3 -DNDEBUG";
-        }
-        else
-        {
-            return 3;
-        }
+        SHU_CompilerOptimization(SHUM_COMPILER_OPTIMIZATION_HIGH);
     }
-
-    SHU_CompilerSetFlags(compilerFlags);
 
     SHU_ModuleBegin("Code-Juliett");
 
@@ -113,6 +95,6 @@ int main(int argc, char **argv)
     return 0;
 
 usageError:
-    SHU_LogInfo("Usage is <compiler> <d/r> [all]");
+    SHU_LogInfo("Usage is <compiler> <d/r> [all] [all]");
     return 1;
 }
