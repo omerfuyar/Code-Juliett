@@ -7,9 +7,9 @@
 
 int main(int argc, char **argv)
 {
-    RJGlobal_SetSetupCallback(App_Setup);
-    RJGlobal_SetLoopCallback(App_Loop);
-    RJGlobal_SetTerminateCallback(App_Terminate);
+    RJ_SetSetupCallback(App_Setup);
+    RJ_SetLoopCallback(App_Loop);
+    RJ_SetTerminateCallback(App_Terminate);
 
-    RJGlobal_Run(argc, argv);
+    RJ_Run(argc, argv);
 }

@@ -18,7 +18,7 @@
 
 struct TEST_DATA
 {
-    RJGlobal_Size count;
+    RJ_Size count;
 
     Vector3 positions[TEST_OBJECT_COUNT];
     Vector3 rotations[TEST_OBJECT_COUNT];
@@ -48,9 +48,9 @@ struct TEST_DATA
 #define tedRendererBatch(entity) TED.rendererBatches[entity]
 
 float testTimer = 0.0f;
-RJGlobal_Size testFrameCount = 0;
+RJ_Size testFrameCount = 0;
 
-typedef RJGlobal_Size TestEntity;
+typedef RJ_Size TestEntity;
 
 static TestEntity TestEntity_Create(Vector3 position, Vector3 rotation, Vector3 scale, RendererBatch batch)
 {
@@ -60,7 +60,7 @@ static TestEntity TestEntity_Create(Vector3 position, Vector3 rotation, Vector3 
     tedRendererComponent(TED.count) = Renderer_ComponentCreate(TED.count, batch);
     tedRendererBatch(TED.count) = batch;
 
-    // RJGlobal_DebugWarning("entity : %u, batch %u, renderable : %u", TED.count, batch, tedRendererComponent(TED.count));
+    // RJ_DebugWarning("entity : %u, batch %u, renderable : %u", TED.count, batch, tedRendererComponent(TED.count));
 
     return TED.count++;
 }
@@ -73,8 +73,8 @@ void App_Setup(int argc, char **argv)
     (void)argc;
     (void)argv;
 
-    RJGlobal_MemorySet(TED.rendererComponents, sizeof(RendererComponent) * TEST_OBJECT_COUNT, RJGLOBAL_INDEX_INVALID);
-    RJGlobal_MemorySet(TED.rendererBatches, sizeof(RendererBatch) * TEST_OBJECT_COUNT, RJGLOBAL_INDEX_INVALID);
+    memset(TED.rendererComponents, (int)RJ_INDEX_INVALID, sizeof(RendererComponent) * TEST_OBJECT_COUNT);
+    memset(TED.rendererBatches, (int)RJ_INDEX_INVALID, sizeof(RendererBatch) * TEST_OBJECT_COUNT);
 
     srand((unsigned int)time(NULL));
 
@@ -85,8 +85,8 @@ void App_Setup(int argc, char **argv)
     Input_Initialize(window);
     Renderer_Initialize(window, 4);
 
-    Renderer_ConfigureShaders(scl("shaders" RJGLOBAL_PATH_DELIMETER_STR "vertex.glsl"),
-                              scl("shaders" RJGLOBAL_PATH_DELIMETER_STR "fragment.glsl"));
+    Renderer_ConfigureShaders(scl("shaders" RJ_PATH_DELIMETER_STR "vertex.glsl"),
+                              scl("shaders" RJ_PATH_DELIMETER_STR "fragment.glsl"));
 
     TED.camera.position = Vector3_New(0.0f, 0.0f, -10.0f);
     TED.camera.rotation = Vector3_New(0.0f, 90.0f, 0.0f);
@@ -103,17 +103,17 @@ void App_Setup(int argc, char **argv)
                              &TED.camera.farClipPlane,
                              &TED.camera.isPerspective);
 
-    RendererBatch markBatch = Renderer_BatchCreate(scl("models" RJGLOBAL_PATH_DELIMETER_STR "Mark.mdl"), NULL, 1, TED.positions, TED.rotations, TED.scales);
-    RendererBatch testBatch = Renderer_BatchCreate(scl("models" RJGLOBAL_PATH_DELIMETER_STR "Test.mdl"), NULL, TEST_OBJECT_COUNT - 1, TED.positions, TED.rotations, TED.scales);
+    RendererBatch markBatch = Renderer_BatchCreate(scl("models" RJ_PATH_DELIMETER_STR "Mark.mdl"), NULL, 1, TED.positions, TED.rotations, TED.scales);
+    RendererBatch testBatch = Renderer_BatchCreate(scl("models" RJ_PATH_DELIMETER_STR "Test.mdl"), NULL, TEST_OBJECT_COUNT - 1, TED.positions, TED.rotations, TED.scales);
 
     mark = TestEntity_Create(Vector3_New(0.0f, 0.0f, -1.0f),
                              Vector3_Zero,
                              Vector3_One,
                              markBatch);
 
-    for (RJGlobal_Size y = 0; y < TEST_GRID_Y; y++)
+    for (RJ_Size y = 0; y < TEST_GRID_Y; y++)
     {
-        for (RJGlobal_Size x = 0; x < TEST_GRID_X; x++)
+        for (RJ_Size x = 0; x < TEST_GRID_X; x++)
         {
             TestEntity_Create(Vector3_New((-TEST_GRID_X / 2.0f) + (float)x + (y % 2 == 1 ? 0.5f : 0.0f),
                                           (-TEST_GRID_Y / 8.0f) + (float)y / 4.0f,
@@ -172,7 +172,7 @@ void App_Loop(float deltaTime)
 
     Renderer_Render();
 
-    char titleBuffer[RJGLOBAL_TEMP_BUFFER_SIZE] = {0};
+    char titleBuffer[RJ_TEMP_BUFFER_SIZE] = {0};
     snprintf(titleBuffer, sizeof(titleBuffer),
              "Juliette | FPS: %6.2f | Frame Time: %6.5f ms | mouseWorldPosition: %6.2f, %6.2f, %6.2f",
              1.0f / deltaTime,
@@ -186,7 +186,7 @@ void App_Loop(float deltaTime)
     testTimer += deltaTime;
     if (testTimer > TEST_TIME)
     {
-        RJGlobal_DebugLog(true, "TEST", "Test time: %f, Average FPS: %f", testTimer, (float)testFrameCount / testTimer);
+        RJ_DebugLog(true, "TEST", "Test time: %f, Average FPS: %f", testTimer, (float)testFrameCount / testTimer);
     }
 }
 
