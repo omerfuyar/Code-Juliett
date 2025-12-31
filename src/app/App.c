@@ -10,7 +10,7 @@
 #define TEST_GRID_Y 4
 #define TEST_OBJECT_COUNT TEST_GRID_X *TEST_GRID_Y + 1
 #define TEST_VSYNC true
-#define TEST_FULL_SCREEN true
+#define TEST_FULL_SCREEN false
 #define TEST_GRAVITY -MATHS_GRAVITY
 #define TEST_DRAG 0.0f
 #define TEST_ELASTICITY 1.0f
@@ -85,8 +85,8 @@ void App_Setup(int argc, char **argv)
     Input_Initialize(window);
     Renderer_Initialize(window, 4);
 
-    Renderer_ConfigureShaders(scl("shaders" RJ_PATH_DELIMETER_STR "vertex.glsl"),
-                              scl("shaders" RJ_PATH_DELIMETER_STR "fragment.glsl"));
+    Renderer_ConfigureShaders(scl("shaders/vertex.glsl"),
+                              scl("shaders/fragment.glsl"));
 
     TED.camera.position = Vector3_New(0.0f, 0.0f, -10.0f);
     TED.camera.rotation = Vector3_New(0.0f, 90.0f, 0.0f);
@@ -103,8 +103,8 @@ void App_Setup(int argc, char **argv)
                              &TED.camera.farClipPlane,
                              &TED.camera.isPerspective);
 
-    RendererBatch markBatch = Renderer_BatchCreate(scl("models" RJ_PATH_DELIMETER_STR "Mark.mdl"), NULL, 1, TED.positions, TED.rotations, TED.scales);
-    RendererBatch testBatch = Renderer_BatchCreate(scl("models" RJ_PATH_DELIMETER_STR "Test.mdl"), NULL, TEST_OBJECT_COUNT - 1, TED.positions, TED.rotations, TED.scales);
+    RendererBatch markBatch = Renderer_BatchCreate(scl("models/Mark.mdl"), NULL, 1, TED.positions, TED.rotations, TED.scales);
+    RendererBatch testBatch = Renderer_BatchCreate(scl("models/Test.mdl"), NULL, TEST_OBJECT_COUNT - 1, TED.positions, TED.rotations, TED.scales);
 
     mark = TestEntity_Create(Vector3_New(0.0f, 0.0f, -1.0f),
                              Vector3_Zero,
@@ -160,7 +160,7 @@ void App_Loop(float deltaTime)
     if (Input_GetMouseButton(InputMouseButtonCode_Left, InputState_Down | InputState_Pressed))
     {
         Vector2Int temp = Input_GetMousePositionDelta();
-        TED.camera.position = Vector3_Add(TED.camera.position, Vector3_Scale(Vector3_New(temp.x, temp.y, 0.0f), TED.camera.speed * TED.camera.size));
+        TED.camera.position = Vector3_Sum(TED.camera.position, Vector3_Scale(Vector3_New(temp.x, temp.y, 0.0f), TED.camera.speed * TED.camera.size));
     }
 
     float newSize = TED.camera.size - Input_GetMouseScroll();
