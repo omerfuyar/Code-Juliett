@@ -78,7 +78,7 @@ void App_Setup(int argc, char **argv)
 
     srand((unsigned int)time(NULL));
 
-    window = Context_Initialize();
+    Context_Initialize(&window);
 
     Context_Configure(scl("Juliette"), TEST_WINDOW_SIZE, TEST_VSYNC, TEST_FULL_SCREEN, NULL);
 
@@ -103,8 +103,10 @@ void App_Setup(int argc, char **argv)
                              &TED.camera.farClipPlane,
                              &TED.camera.isPerspective);
 
-    RendererBatch markBatch = Renderer_BatchCreate(scl("models/Mark.mdl"), NULL, 1, TED.positions, TED.rotations, TED.scales);
-    RendererBatch testBatch = Renderer_BatchCreate(scl("models/Test.mdl"), NULL, TEST_OBJECT_COUNT - 1, TED.positions, TED.rotations, TED.scales);
+    RendererBatch markBatch = 0;
+    Renderer_BatchCreate(&markBatch, scl("models/Mark.mdl"), NULL, 1, TED.positions, TED.rotations, TED.scales);
+    RendererBatch testBatch = 0;
+    Renderer_BatchCreate(&testBatch, scl("models/Test.mdl"), NULL, TEST_OBJECT_COUNT - 1, TED.positions, TED.rotations, TED.scales);
 
     mark = TestEntity_Create(Vector3_New(0.0f, 0.0f, -1.0f),
                              Vector3_Zero,
