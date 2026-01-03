@@ -78,15 +78,27 @@ void App_Setup(int argc, char **argv)
 
     srand((unsigned int)time(NULL));
 
-    Context_Initialize(&window);
+    RJ_Result result = Context_Initialize(&window);
+    if (result != RJ_OK)
+    {
+        RJ_DebugError("Failed to initialize context : %d", result);
+    }
 
     Context_Configure(scl("Juliette"), TEST_WINDOW_SIZE, TEST_VSYNC, TEST_FULL_SCREEN, NULL);
 
     Input_Initialize(window);
-    Renderer_Initialize(window, 4);
+    result = Renderer_Initialize(window, 4);
+    if (result != RJ_OK)
+    {
+        RJ_DebugError("Failed to initialize renderer : %d", result);
+    }
 
-    Renderer_ConfigureShaders(scl("shaders/vertex.glsl"),
-                              scl("shaders/fragment.glsl"));
+    result = Renderer_ConfigureShaders(scl("shaders/vertex.glsl"),
+                                       scl("shaders/fragment.glsl"));
+    if (result != RJ_OK)
+    {
+        RJ_DebugError("Failed to configure shaders : %d", result);
+    }
 
     TED.camera.position = Vector3_New(0.0f, 0.0f, -10.0f);
     TED.camera.rotation = Vector3_New(0.0f, 90.0f, 0.0f);
@@ -104,9 +116,18 @@ void App_Setup(int argc, char **argv)
                              &TED.camera.isPerspective);
 
     RendererBatch markBatch = 0;
-    Renderer_BatchCreate(&markBatch, scl("models/Mark.mdl"), NULL, 1, TED.positions, TED.rotations, TED.scales);
+    result = Renderer_BatchCreate(&markBatch, scl("models/Mark.mdl"), NULL, 1, TED.positions, TED.rotations, TED.scales);
+    if (result != RJ_OK)
+    {
+        RJ_DebugError("Failed to create mark batch : %d", result);
+    }
+
     RendererBatch testBatch = 0;
-    Renderer_BatchCreate(&testBatch, scl("models/Test.mdl"), NULL, TEST_OBJECT_COUNT - 1, TED.positions, TED.rotations, TED.scales);
+    result = Renderer_BatchCreate(&testBatch, scl("models/Test.mdl"), NULL, TEST_OBJECT_COUNT - 1, TED.positions, TED.rotations, TED.scales);
+    if (result != RJ_OK)
+    {
+        RJ_DebugError("Failed to create test batch : %d", result);
+    }
 
     mark = TestEntity_Create(Vector3_New(0.0f, 0.0f, -1.0f),
                              Vector3_Zero,

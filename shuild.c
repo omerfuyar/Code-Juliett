@@ -50,7 +50,7 @@ int main(int argc, char **argv)
         SHU_CompilerWarning(SHUM_COMPILER_WARNING_HIGH, 1);
         if (!strcmp(argv[1], "clang") || !strcmp(argv[1], "gcc"))
         {
-            SHU_CompilerAddFlags("-Wno-gnu-zero-variadic-macro-arguments -Wno-format-nonliteral -Wno-language-extension-token");
+            SHU_CompilerAddFlags("-Wno-unused-function -Wno-gnu-zero-variadic-macro-arguments -Wno-format-nonliteral -Wno-language-extension-token");
         }
     }
     else
