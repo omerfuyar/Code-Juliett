@@ -7,6 +7,6 @@
 ```shell
 git clone --recurse-submodules https://github.com/omerfuyar/Code-Juliett.git
 cd Code-Juliett
-clang ShuildJuliett.c -o ShuildJuliett -O3
-./ShuildJuliett clang r all all
+clang shuild.c -o shuild -O3
+./shuild clang r all all
 ```
