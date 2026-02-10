@@ -29,6 +29,8 @@ int main(int argc, char **argv)
     SHU_CompilerTryConfigure(argv[1]);
     SHU_UtilAutomate(argc, argv);
 
+    SHU_CacheConfigure(isDebug ? ".shu/debug/" : ".shu/release/");
+
     if (argc > 3)
     {
         SHU_LogWarning("Performing clean build...");
@@ -39,19 +41,22 @@ int main(int argc, char **argv)
     SHU_ModuleBegin("shuild", "dependencies/Code-Romeo/");
     SHU_ModuleAddSourceFile("shuild.c");
     SHU_ModuleCompile("dependencies/Code-Romeo/", SHUM_MODULE_EXECUTABLE);
+
     SHU_CompilerClearFlags();
 
     int result = 0;
 #if SHUM_HOST_PLATFORM == SHUM_PLATFORM_WINDOWS
-    result = SHU_UtilRun(".\\dependencies\\Code-Romeo\\shuild.exe %s %s %s %s", argv[1], argv[2], argc > 4 ? argv[3] : "", argc > 5 ? argv[4] : "");
+    result = SHU_UtilRun(".\\dependencies\\Code-Romeo\\shuild.exe %s %s %s %s", argv[1], argv[2], argc > 3 ? argv[3] : "");
 #else
-    result = SHU_UtilRun("./dependencies/Code-Romeo/shuild %s %s %s %s", argv[1], argv[2], argc > 4 ? argv[3] : "", argc > 5 ? argv[4] : "");
+    result = SHU_UtilRun("./dependencies/Code-Romeo/shuild %s %s %s", argv[1], argv[2], argc > 3 ? argv[3] : "");
 #endif
 
     if (result != 0)
     {
         SHU_LogError(2, "Error shuilding Code-Romeo : %d", result);
     }
+
+    SHU_CompilerAddFlags(SHUM_FLAGS_STANDARD_C23);
 
     if (isDebug)
     {
@@ -69,7 +74,7 @@ int main(int argc, char **argv)
     SHU_ModuleAddIncludeDirectory("include/");
     SHU_ModuleAddIncludeDirectory("dependencies/Code-Romeo/include/");
 
-    SHU_ModuleAddSourceDirectory("src/");
+    SHU_ModuleAddSourceFile("src/");
 
     SHU_ModuleAddLibraryDirectory(isDebug ? "dependencies/Code-Romeo/build/debug/" : "dependencies/Code-Romeo/build/release/");
 
