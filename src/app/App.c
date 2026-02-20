@@ -81,7 +81,7 @@ void App_Setup(int argc, char **argv)
     RJ_Result result = Context_Initialize(&window);
     if (result != RJ_OK)
     {
-        RJ_DebugError("Failed to initialize context : %d", result);
+        RJ_DebugError(result, "Failed to initialize context");
     }
 
     Context_Configure(scl("Juliette"), TEST_WINDOW_SIZE, TEST_VSYNC, TEST_FULL_SCREEN, NULL);
@@ -90,14 +90,14 @@ void App_Setup(int argc, char **argv)
     result = Renderer_Initialize(window, 4);
     if (result != RJ_OK)
     {
-        RJ_DebugError("Failed to initialize renderer : %d", result);
+        RJ_DebugError(result, "Failed to initialize renderer");
     }
 
     result = Renderer_ConfigureShaders(scl("shaders/vertex.glsl"),
                                        scl("shaders/fragment.glsl"));
     if (result != RJ_OK)
     {
-        RJ_DebugError("Failed to configure shaders : %d", result);
+        RJ_DebugError(result, "Failed to configure shaders");
     }
 
     TED.camera.position = Vector3_New(0.0f, 0.0f, -10.0f);
@@ -119,14 +119,14 @@ void App_Setup(int argc, char **argv)
     result = Renderer_BatchCreate(&markBatch, scl("models/Mark.mdl"), NULL, 1, TED.positions, TED.rotations, TED.scales);
     if (result != RJ_OK)
     {
-        RJ_DebugError("Failed to create mark batch : %d", result);
+        RJ_DebugError(result, "Failed to create mark batch");
     }
 
     RendererBatch testBatch = 0;
     result = Renderer_BatchCreate(&testBatch, scl("models/Test.mdl"), NULL, TEST_OBJECT_COUNT - 1, TED.positions, TED.rotations, TED.scales);
     if (result != RJ_OK)
     {
-        RJ_DebugError("Failed to create test batch : %d", result);
+        RJ_DebugError(result, "Failed to create test batch");
     }
 
     mark = TestEntity_Create(Vector3_New(0.0f, 0.0f, -1.0f),

@@ -38,7 +38,7 @@ int main(int argc, char **argv)
         SHU_CacheClearAll();
     }
 
-    SHU_CompilerAddFlags(SHUM_FLAGS_OPTIMIZATION_HIGH SHUM_FLAGS_STANDARD_C99);
+    SHU_CompilerAddFlags(SHUM_FLAGS_OPTIMIZATION_HIGH);
     SHU_ModuleBegin("shuild", "dependencies/Code-Romeo/");
     SHU_ModuleAddSourceFile("shuild.c");
     SHU_ModuleCompile("dependencies/Code-Romeo/", SHUM_MODULE_EXECUTABLE);
@@ -63,7 +63,7 @@ int main(int argc, char **argv)
     {
         SHU_CompilerAddFlags(SHUM_FLAGS_DEBUG SHUM_FLAGS_WARNING_ERROR);
         SHU_CompilerAddFlags(SHUM_FLAGS_WARNING_HIGH);
-        SHU_CompilerAddFlags("-Wno-format-nonliteral -Wno-language-extension-token");
+        SHU_CompilerAddFlags("-Wno-format-nonliteral");
     }
     else
     {
