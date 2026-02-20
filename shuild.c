@@ -2,6 +2,7 @@
 #define SHUC_MAX_COMMAND_BUFFER_SIZE 8192
 #define SHUC_ENABLE_INCREMENTAL
 #define SHUILD_IMPLEMENTATION
+#define SHUC_SHORT_LOG
 #include "dependencies/shuild/shuild.h"
 
 int main(int argc, char **argv)
@@ -23,7 +24,7 @@ int main(int argc, char **argv)
     }
     else
     {
-        return 2;
+        SHU_LogError(2, "Specify debug or release with second parameter <d/r>.");
     }
 
     SHU_CompilerTryConfigure(argv[1]);
@@ -37,7 +38,7 @@ int main(int argc, char **argv)
         SHU_CacheClearAll();
     }
 
-    SHU_CompilerAddFlags(SHUM_FLAGS_OPTIMIZATION_HIGH);
+    SHU_CompilerAddFlags(SHUM_FLAGS_OPTIMIZATION_HIGH SHUM_FLAGS_STANDARD_C99);
     SHU_ModuleBegin("shuild", "dependencies/Code-Romeo/");
     SHU_ModuleAddSourceFile("shuild.c");
     SHU_ModuleCompile("dependencies/Code-Romeo/", SHUM_MODULE_EXECUTABLE);
@@ -46,7 +47,7 @@ int main(int argc, char **argv)
 
     int result = 0;
 #if SHUM_HOST_PLATFORM == SHUM_PLATFORM_WINDOWS
-    result = SHU_UtilRun(".\\dependencies\\Code-Romeo\\shuild.exe %s %s %s %s", argv[1], argv[2], argc > 3 ? argv[3] : "");
+    result = SHU_UtilRun(".\\dependencies\\Code-Romeo\\shuild.exe %s %s %s", argv[1], argv[2], argc > 3 ? argv[3] : "");
 #else
     result = SHU_UtilRun("./dependencies/Code-Romeo/shuild %s %s %s", argv[1], argv[2], argc > 3 ? argv[3] : "");
 #endif
@@ -62,7 +63,7 @@ int main(int argc, char **argv)
     {
         SHU_CompilerAddFlags(SHUM_FLAGS_DEBUG SHUM_FLAGS_WARNING_ERROR);
         SHU_CompilerAddFlags(SHUM_FLAGS_WARNING_HIGH);
-        SHU_CompilerAddFlags("-Wno-unused-function -Wno-gnu-zero-variadic-macro-arguments -Wno-format-nonliteral -Wno-language-extension-token");
+        SHU_CompilerAddFlags("-Wno-format-nonliteral -Wno-language-extension-token");
     }
     else
     {
