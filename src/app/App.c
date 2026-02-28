@@ -22,31 +22,24 @@ struct TEST_DATA
 {
     RJ_Size count;
 
-    RendererComponent rendererComponents[TEST_OBJECT_COUNT];
-
     struct TEST_CAMERA
     {
         RendererCamera cam;
         float speed;
     } camera;
-} TED = {0}; // test entity datas
+
+    Entity mark;
+} TEST = {0};
 
 float testTimer = 0.0f;
 RJ_Size testFrameCount = 0;
 
 ContextWindow window = {0};
-struct Mark
-{
-    Entity ntt;
-    RendererComponent rndr;
-} mark;
 
 void App_Setup(int argc, char **argv)
 {
     (void)argc;
     (void)argv;
-
-    memset(TED.rendererComponents, 0xff, sizeof(RendererComponent) * TEST_OBJECT_COUNT);
 
     srand((unsigned int)time(NULL));
 
@@ -81,15 +74,15 @@ void App_Setup(int argc, char **argv)
         RJ_DebugError(result, "Failed to configure shaders");
     }
 
-    TED.camera.cam.position = Vector3_New(0.0f, 0.0f, -10.0f);
-    TED.camera.cam.rotation = Vector3_New(0.0f, 90.0f, 0.0f);
-    TED.camera.cam.size = 10.0f;
-    TED.camera.cam.nearClipPlane = 0.01f;
-    TED.camera.cam.farClipPlane = 1000.0f;
-    TED.camera.cam.isPerspective = false;
-    TED.camera.speed = 0.0025f;
+    TEST.camera.cam.position = Vector3_New(0.0f, 0.0f, -10.0f);
+    TEST.camera.cam.rotation = Vector3_New(0.0f, 90.0f, 0.0f);
+    TEST.camera.cam.size = 10.0f;
+    TEST.camera.cam.nearClipPlane = 0.01f;
+    TEST.camera.cam.farClipPlane = 1000.0f;
+    TEST.camera.cam.isPerspective = false;
+    TEST.camera.speed = 0.0025f;
 
-    Renderer_SetCamera(&TED.camera.cam);
+    Renderer_SetCamera(&TEST.camera.cam);
 
     RendererBatch markBatch = 0;
     result = Renderer_BatchCreate(&markBatch, scl("models/Mark.mdl"), NULL, 1);
@@ -105,10 +98,11 @@ void App_Setup(int argc, char **argv)
         RJ_DebugError(result, "Failed to create test batch");
     }
 
-    mark.ntt = Entity_Create(Vector3_New(0.0f, 0.0f, -1.0f),
-                             Vector3_Zero,
-                             Vector3_One);
-    mark.rndr = Renderer_ComponentCreate(mark.ntt, markBatch);
+    TEST.mark = Entity_Create(Vector3_New(0.0f, 0.0f, -1.0f),
+                              Vector3_Zero,
+                              Vector3_One);
+
+    Renderer_ComponentCreate(markBatch, TEST.mark);
 
     for (RJ_Size y = 0; y < TEST_GRID_Y; y++)
     {
@@ -120,7 +114,7 @@ void App_Setup(int argc, char **argv)
                                           Vector3_Zero,
                                           Vector3_One);
 
-            TED.rendererComponents[TED.count++] = Renderer_ComponentCreate(newNTT, testBatch);
+            Renderer_ComponentCreate(testBatch, newNTT);
         }
     }
 }
@@ -142,38 +136,38 @@ void App_Loop(float deltaTime)
 
     if (Input_GetKey(InputKeyCode_R, InputState_Down))
     {
-        TED.camera.cam.isPerspective = !TED.camera.cam.isPerspective;
+        TEST.camera.cam.isPerspective = !TEST.camera.cam.isPerspective;
     }
 
     if (Input_GetKey(InputKeyCode_LeftArrow, InputState_Down))
     {
-        TED.camera.cam.position.x += 1.0f;
+        TEST.camera.cam.position.x += 1.0f;
     }
     else if (Input_GetKey(InputKeyCode_RightArrow, InputState_Down))
     {
-        TED.camera.cam.position.x -= 1.0f;
+        TEST.camera.cam.position.x -= 1.0f;
     }
     else if (Input_GetKey(InputKeyCode_UpArrow, InputState_Down))
     {
-        TED.camera.cam.position.y += 1.0f;
+        TEST.camera.cam.position.y += 1.0f;
     }
     else if (Input_GetKey(InputKeyCode_DownArrow, InputState_Down))
     {
-        TED.camera.cam.position.y -= 1.0f;
+        TEST.camera.cam.position.y -= 1.0f;
     }
 
     if (Input_GetMouseButton(InputMouseButtonCode_Left, InputState_Down | InputState_Pressed))
     {
         Vector2Int temp = Input_GetMousePositionDelta();
-        TED.camera.cam.position = Vector3_Sum(TED.camera.cam.position, Vector3_Scale(Vector3_New(temp.x, temp.y, 0.0f), TED.camera.speed * TED.camera.cam.size));
+        TEST.camera.cam.position = Vector3_Sum(TEST.camera.cam.position, Vector3_Scale(Vector3_New(temp.x, temp.y, 0.0f), TEST.camera.speed * TEST.camera.cam.size));
     }
 
-    float newSize = TED.camera.cam.size - Input_GetMouseScroll();
-    TED.camera.cam.size = Maths_Clamp(newSize, 0.5f, 20.0f);
+    float newSize = TEST.camera.cam.size - Input_GetMouseScroll();
+    TEST.camera.cam.size = Maths_Clamp(newSize, 0.5f, 20.0f);
 
     Renderer_Update();
-    Vector3 mouseWorldPosition = Renderer_ScreenToWorldSpace(Input_GetMousePosition(), Maths_Abs(TED.camera.cam.position.z));
-    Entity_SetPosition(mark.ntt, Vector3_New(Maths_Round(mouseWorldPosition.x), Maths_Round(mouseWorldPosition.y), 0.0f));
+    Vector3 mouseWorldPosition = Renderer_ScreenToWorldSpace(Input_GetMousePosition(), Maths_Abs(TEST.camera.cam.position.z));
+    Entity_SetPosition(TEST.mark, Vector3_New(Maths_Round(mouseWorldPosition.x), Maths_Round(mouseWorldPosition.y), 0.0f));
 
     Renderer_Render();
 
