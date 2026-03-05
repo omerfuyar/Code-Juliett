@@ -54,6 +54,8 @@ void App_Setup(int argc, char **argv)
         RJ_DebugError(result, "Failed to initialize context");
     }
 
+    // todo merge this two optionally. Entity will call context internally
+
     result = Entity_Initialize(TEST_OBJECT_COUNT);
     if (result != RJ_OK)
     {
@@ -61,14 +63,14 @@ void App_Setup(int argc, char **argv)
     }
 
     Input_Initialize(&window);
+
     result = Renderer_Initialize(&window, 4);
     if (result != RJ_OK)
     {
         RJ_DebugError(result, "Failed to initialize renderer");
     }
 
-    result = Renderer_ConfigureShaders(scl("shaders/vertex.glsl"),
-                                       scl("shaders/fragment.glsl"));
+    result = Renderer_ConfigureShaders(scl("shaders/vertex.glsl"), scl("shaders/fragment.glsl"));
     if (result != RJ_OK)
     {
         RJ_DebugError(result, "Failed to configure shaders");
