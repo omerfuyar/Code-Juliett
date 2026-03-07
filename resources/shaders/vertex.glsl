@@ -1,6 +1,7 @@
-#version 330 core
+#version 140
 
 #define RENDERER_BATCH_MAX_OBJECT_COUNT 256 // 16 KB = 16,384 Bytes = 256 * 64
+#extension GL_ARB_explicit_attrib_location : require
 
 layout (location = 0) in vec3 vertPosition;
 layout (location = 1) in vec3 vertNormal;
