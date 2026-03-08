@@ -88,7 +88,7 @@ int main(int argc, char **argv)
     SHU_UtilAutomate(argc, argv);
 
 	char strBuffer[SHUC_MAX_STRING_SIZE] = {0};
-	snprintf(strBuffer, SHUC_MAX_STRING_SIZE, ".shu/%s/", buildName);
+	snprintf(strBuffer, SHUC_MAX_STRING_SIZE, ".shu/%s/%s/", isDynamic ? "dynamic" : "static", buildName);
     SHU_CacheConfigure(strBuffer);
 
     if (isClean)
@@ -160,7 +160,7 @@ int main(int argc, char **argv)
 
     SHU_ModuleAddSourceFile("src/");
 
-	snprintf(strBuffer, SHUC_MAX_STRING_SIZE, "dependencies/Code-Romeo/build/%s/", buildName);
+	snprintf(strBuffer, SHUC_MAX_STRING_SIZE, "dependencies/Code-Romeo/build/%s/%s/", isDynamic ? "dynamic" : "static", buildName);
     SHU_ModuleAddLibraryDirectory(strBuffer);
 
     SHU_ModuleLinkLibrary("Code-Romeo");
@@ -187,10 +187,10 @@ int main(int argc, char **argv)
     SHU_ModuleLinkLibrary("CoreVideo");
 #endif
 
-	snprintf(strBuffer, SHUC_MAX_STRING_SIZE, "build/%s/", buildName);
+	snprintf(strBuffer, SHUC_MAX_STRING_SIZE, "build/%s/%s/", isDynamic ? "dynamic" : "static", buildName);
     SHU_ModuleCompile(strBuffer, SHUM_MODULE_EXECUTABLE);
 
-	snprintf(strBuffer, SHUC_MAX_STRING_SIZE, "build/%s/resources/", buildName);
+	snprintf(strBuffer, SHUC_MAX_STRING_SIZE, "build/%s/%s/resources/", isDynamic ? "dynamic" : "static", buildName);
     SHU_UtilCopyFile("resources/", strBuffer);
 
     return 0;
