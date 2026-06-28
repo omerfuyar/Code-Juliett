@@ -19,76 +19,76 @@ int main(int argc, char **argv)
     }
 
     char isDebug = 0;
-	char isClean = 0;
-	char isDynamic = 0;
+    char isClean = 0;
+    char isDynamic = 0;
 
-	const char *compilerStr = argv[1];
-	const char *buildOptStr = argv[2];
-	const char *buildName = NULL;
+    const char *compilerStr = argv[1];
+    const char *buildOptStr = argv[2];
+    const char *buildName = NULL;
 
-    if(strcmp(buildOptStr, "r") == 0)
+    if (strcmp(buildOptStr, "r") == 0)
     {
         isDebug = 0;
-		buildName = "release";
+        buildName = "release";
     }
-    else if(strcmp(buildOptStr, "d") == 0)
+    else if (strcmp(buildOptStr, "d") == 0)
     {
-    	isDebug = DEBUG_REGULAR;
-		buildName = "debug";
+        isDebug = DEBUG_REGULAR;
+        buildName = "debug";
     }
-    else if(strcmp(buildOptStr, "dsa") == 0)
+    else if (strcmp(buildOptStr, "dsa") == 0)
     {
-		isDebug = DEBUG_SANITIZE_ADDRESS;
-		buildName = "debug_sanitize_address";
+        isDebug = DEBUG_SANITIZE_ADDRESS;
+        buildName = "debug_sanitize_address";
     }
-    else if(strcmp(buildOptStr, "dst") == 0)
+    else if (strcmp(buildOptStr, "dst") == 0)
     {
-		isDebug = DEBUG_SANITIZE_THREAD;
-		buildName = "debug_sanitize_thread";
+        isDebug = DEBUG_SANITIZE_THREAD;
+        buildName = "debug_sanitize_thread";
     }
-    else if(strcmp(buildOptStr, "dsu") == 0)
+    else if (strcmp(buildOptStr, "dsu") == 0)
     {
-		isDebug = DEBUG_SANITIZE_UNDEFINED;
-		buildName = "debug_sanitize_undefined";
+        isDebug = DEBUG_SANITIZE_UNDEFINED;
+        buildName = "debug_sanitize_undefined";
     }
-    else if(strcmp(buildOptStr, "dsm") == 0)
+    else if (strcmp(buildOptStr, "dsm") == 0)
     {
-		isDebug = DEBUG_SANITIZE_MEMORY;
-		buildName = "debug_sanitize_memory";
+        isDebug = DEBUG_SANITIZE_MEMORY;
+        buildName = "debug_sanitize_memory";
     }
     else
     {
         SHU_LogError(1, "Unknown argument '%s', Specify debug or release build with second parameter <r/d/dsa/dst/dsu/dsm>.", buildOptStr);
     }
 
-	if(isDebug > DEBUG_REGULAR && strcmp(compilerStr, "clang") != 0)
-	{
-		SHU_LogError(1, "Sanitizers can only be used with Clang compiler.");
-	}
-
-    for(int i = 3; i < argc; i++)
+    if (isDebug > DEBUG_REGULAR && strcmp(compilerStr, "clang") != 0)
     {
-		const char *const optionalArg = argv[i];
+        SHU_LogError(1, "Sanitizers can only be used with Clang compiler.");
+    }
 
-		if(isClean == 0 && strcmp(optionalArg, "clean") == 0)
-		{
-			isClean = 1;
-		}
-		else if(isDynamic == 0 && strcmp(optionalArg, "dynamic") == 0)
-		{
-			isDynamic = 1;
-		}
-		else
-		{
-			SHU_LogError(1, "Unknown argument '%s', try [dynamic] [clean].", optionalArg);
-		}
+    for (int i = 3; i < argc; i++)
+    {
+        const char *const optionalArg = argv[i];
+
+        if (isClean == 0 && strcmp(optionalArg, "clean") == 0)
+        {
+            isClean = 1;
+        }
+        else if (isDynamic == 0 && strcmp(optionalArg, "dynamic") == 0)
+        {
+            isDynamic = 1;
+        }
+        else
+        {
+            SHU_LogError(1, "Unknown argument '%s', try [dynamic] [clean].", optionalArg);
+        }
     }
 
     SHU_CompilerTryConfigure(compilerStr);
     SHU_UtilAutomate(argc, argv);
 
-	char strBuffer[SHUC_MAX_STRING_SIZE] = {0};
-	snprintf(strBuffer, SHUC_MAX_STRING_SIZE, ".shu/%s/%s/", isDynamic ? "dynamic" : "static", buildName);
+    char strBuffer[SHUC_MAX_STRING_SIZE] = {0};
+    snprintf(strBuffer, SHUC_MAX_STRING_SIZE, ".shu/%s/%s/", isDynamic ? "dynamic" : "static", buildName);
     SHU_CacheConfigure(strBuffer);
 
     if (isClean)
@@ -122,11 +122,11 @@ int main(int argc, char **argv)
     {
         SHU_CompilerAddFlags(SHUM_FLAGS_DEBUG SHUM_FLAGS_OPTIMIZATION_DEBUG SHUM_FLAGS_WARNING_ERROR);
         SHU_CompilerAddFlags(SHUM_FLAGS_WARNING_HIGH);
-        SHU_CompilerAddFlags("-Wno-format-nonliteral -Wno-unused-function -Og");
+        SHU_CompilerAddFlags("-Wno-format-nonliteral -Wno-unused-function -Wno-missing-declarations");
 
-        if(SHU_CompilerGetIdentifier() == SHUM_COMPILER_CLANG)
+        if (SHU_CompilerGetIdentifier() == SHUM_COMPILER_CLANG)
         {
-        	SHU_CompilerAddFlags("-Wno-gnu-zero-variadic-macro-arguments -fno-omit-frame-pointer");
+            SHU_CompilerAddFlags("-Wno-gnu-zero-variadic-macro-arguments -fno-omit-frame-pointer");
         }
     }
     else
@@ -134,23 +134,23 @@ int main(int argc, char **argv)
         SHU_CompilerAddFlags(SHUM_FLAGS_OPTIMIZATION_HIGH);
     }
 
-    switch(isDebug)
+    switch (isDebug)
     {
     case DEBUG_SANITIZE_ADDRESS:
-		SHU_CompilerAddFlags("-fsanitize=address,leak");
-    	break;
+        SHU_CompilerAddFlags("-fsanitize=address,leak");
+        break;
 
     case DEBUG_SANITIZE_THREAD:
-    	SHU_CompilerAddFlags("-fsanitize=thread");
-    	break;
+        SHU_CompilerAddFlags("-fsanitize=thread");
+        break;
 
     case DEBUG_SANITIZE_UNDEFINED:
-    	SHU_CompilerAddFlags("-fsanitize=undefined");
-    	break;
+        SHU_CompilerAddFlags("-fsanitize=undefined");
+        break;
 
     case DEBUG_SANITIZE_MEMORY:
-    	SHU_CompilerAddFlags("-fsanitize=memory");
-    	break;
+        SHU_CompilerAddFlags("-fsanitize=memory");
+        break;
     }
 
     SHU_ModuleBegin("Code-Juliett", NULL);
@@ -160,7 +160,7 @@ int main(int argc, char **argv)
 
     SHU_ModuleAddSourceFile("src/");
 
-	snprintf(strBuffer, SHUC_MAX_STRING_SIZE, "dependencies/Code-Romeo/build/%s/%s/", isDynamic ? "dynamic" : "static", buildName);
+    snprintf(strBuffer, SHUC_MAX_STRING_SIZE, "dependencies/Code-Romeo/build/%s/%s/", isDynamic ? "dynamic" : "static", buildName);
     SHU_ModuleAddLibraryDirectory(strBuffer);
 
     SHU_ModuleLinkLibrary("Code-Romeo");
@@ -169,6 +169,7 @@ int main(int argc, char **argv)
     SHU_ModuleLinkLibrary("glad");
     SHU_ModuleLinkLibrary("stb");
     SHU_ModuleLinkLibrary("miniaudio");
+    SHU_ModuleLinkLibrary("cgltf");
 
 #if SHUM_HOST_PLATFORM == SHUM_PLATFORM_WINDOWS
     SHU_ModuleLinkLibrary("opengl32");
@@ -187,10 +188,10 @@ int main(int argc, char **argv)
     SHU_ModuleLinkLibrary("CoreVideo");
 #endif
 
-	snprintf(strBuffer, SHUC_MAX_STRING_SIZE, "build/%s/%s/", isDynamic ? "dynamic" : "static", buildName);
+    snprintf(strBuffer, SHUC_MAX_STRING_SIZE, "build/%s/%s/", isDynamic ? "dynamic" : "static", buildName);
     SHU_ModuleCompile(strBuffer, SHUM_MODULE_EXECUTABLE);
 
-	snprintf(strBuffer, SHUC_MAX_STRING_SIZE, "build/%s/%s/resources/", isDynamic ? "dynamic" : "static", buildName);
+    snprintf(strBuffer, SHUC_MAX_STRING_SIZE, "build/%s/%s/resources/", isDynamic ? "dynamic" : "static", buildName);
     SHU_UtilCopyFile("resources/", strBuffer);
 
     return 0;

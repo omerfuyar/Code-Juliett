@@ -1,194 +1,161 @@
-#include "app/App.h"
-
-#include "utilities/Maths.h"
-
-#include "tools/Entity.h"
+#include "RJGlobal.h"
 
 #include "systems/Renderer.h"
 #include "systems/Input.h"
 
-#define TEST_WINDOW_SIZE Vector2Int_New(1080, 720)
-#define TEST_GRID_X 4
-#define TEST_GRID_Y 4
-#define TEST_OBJECT_COUNT TEST_GRID_X *TEST_GRID_Y + 1
-#define TEST_VSYNC true
-#define TEST_FULL_SCREEN false
-#define TEST_GRAVITY -MATHS_GRAVITY
-#define TEST_DRAG 0.0f
-#define TEST_ELASTICITY 1.0f
-#define TEST_TIME 10.0f
+#include "tools/Context.h"
+#include "tools/Resource.h"
 
-struct TEST_DATA
+#include "utilities/Maths.h"
+
+#define check(result) RJ_DebugAssert(!(result), "Error received : " #result)
+
+#define MAP_ENTITIES 63
+#define OTHER_ENTITIES 1 // player
+
+#define MAX_ENTITIES (MAP_ENTITIES + OTHER_ENTITIES)
+
+#define PLAYER_SENSITIVITY 10.0f
+#define PLAYER_SPEED 2.0f
+
+struct Test
 {
-    RJ_Size count;
+    RendererBatch batch;
+    Entity entities[MAP_ENTITIES];
+    // Entity entities[MAP_ENTITIES];
+    //  RendererBatch meshBatch;
+    //  Entity colliderEntities[MAX_COLLIDERS - 1 /*player collider*/];
+    //  RJ_Size colliderCount;
+    //  Entity audioEntities[MAX_AUDIOS];
+    //  RJ_Size audioCount;
+} test = {0};
 
-    struct TEST_CAMERA
+struct Player
+{
+    Entity entity;
+    RendererCamera camera;
+    float camSens;
+    float speed;
+    // AudioListener listener;
+} player = {0};
+
+bool focus = false;
+
+#pragma region helpers
+
+void fetchPlayerTransform()
+{
+    Vector3 eyePos = Vector3G_Sum(Entity_GetPosition(player.entity), Vector3_New(0.0f, 0.5f, 0.0f));
+
+    player.camera.position = eyePos;
+    player.camera.rotation = Entity_GetRotation(player.entity);
+
+    Renderer_SetCameraData(&player.camera);
+}
+
+void movement(float deltaTime)
+{
+    if (Input_GetMouseButton(InputMouseButtonCode_Left, InputState_Down))
     {
-        RendererCamera cam;
-        float speed;
-    } camera;
+        focus = true;
+        Input_ConfigureCursorMode(InputCursorMode_Captured);
+    }
+    else if (Input_GetKey(InputKeyCode_Escape, InputState_Down))
+    {
+        focus = false;
+        Input_ConfigureCursorMode(InputCursorMode_Normal);
+    }
 
-    Entity mark;
-} TEST = {0};
+    if (!focus)
+    {
+        return;
+    }
 
-float testTimer = 0.0f;
-RJ_Size testFrameCount = 0;
+    if (Input_GetKey(InputKeyCode_F, InputState_Down))
+    {
+        Context_ConfigureFullScreen(!Context_GetInternalData()->fullScreen);
+    }
 
-ContextWindow window = {0};
+    Vector2Int mousePositionDelta = Input_GetMousePositionDelta();
+    Vector3 movementVector = Input_GetMovementVector();
+
+    Vector3 playerRotation = Entity_GetRotation(player.entity);
+
+    playerRotation.y += (float)mousePositionDelta.x * player.camSens * deltaTime;
+    playerRotation.x -= (float)mousePositionDelta.y * player.camSens * deltaTime;
+    playerRotation.x = Maths_Clamp(playerRotation.x, -89.0f, 89.0f);
+
+    Entity_SetRotation(player.entity, playerRotation);
+
+    Vector3 direction = Vector3_Normalized(Vector3_New(
+        Maths_Cos(playerRotation.x) * Maths_Cos(playerRotation.y),
+        Maths_Sin(playerRotation.x),
+        Maths_Cos(playerRotation.x) * Maths_Sin(playerRotation.y)));
+
+    Vector3 right = Vector3_Normalized(Vector3_Cross(direction, Vector3_Up));
+    Vector3 up = Vector3_Normalized(Vector3_Cross(direction, right));
+
+    Vector3 move = Vector3G_Scale(direction, movementVector.y);
+    move = Vector3G_Sum(move, Vector3G_Scale(right, movementVector.x));
+    move = Vector3G_Sum(move, Vector3G_Scale(up, -movementVector.z));
+
+    if (Vector3_Magnitude(move) > 0.01f)
+    {
+        move = Vector3_Normalized(move);
+        Entity_AddPosition(player.entity,
+                           Vector3G_Scale(move, player.speed * deltaTime * (Input_GetKey(InputKeyCode_LeftShift, InputState_Pressed) ? 2.0f : 1.0f)));
+    }
+
+    fetchPlayerTransform();
+}
+
+#pragma endregion helpers
 
 void App_Setup(int argc, char **argv)
 {
     (void)argc;
     (void)argv;
 
-    srand((unsigned int)time(NULL));
+    Resource_Initialize();
+    check(Context_Initialize());
+    check(Entity_Initialize(MAX_ENTITIES));
 
-    window.title = scc(scl("Juliett"));
-    window.size = TEST_WINDOW_SIZE;
-    window.vSync = TEST_VSYNC;
-    window.fullScreen = TEST_FULL_SCREEN;
+    Input_Initialize();
+    check(Renderer_Initialize(1));
+    check(Renderer_ConfigureShaders(scl("shaders/vertex.glsl"), scl("shaders/fragment.glsl")));
 
-    RJ_Result result = Context_Initialize(&window);
-    if (result != RJ_OK)
-    {
-        RJ_DebugError(result, "Failed to initialize context");
-    }
+    test.entities[0] = Entity_Create(Vector3_Zero, Vector3_Zero, Vector3_One);
+    check(Renderer_BatchCreate(&test.batch, scl("models/BoxTextured.glb"), MAP_ENTITIES));
+    check(Renderer_ComponentCreate(test.batch, test.entities[0]));
 
-    // todo merge this two optionally. Entity will call context internally
+    // float sqrt = Maths_Root(MAP_ENTITIES, 2);
+    // for (RJ_Size i = 0; i < MAP_ENTITIES; i++)
+    //{
+    //     test.entities[i] = Entity_Create(Vector3_New((-(RJ_Size)sqrt / 2 + (i % (RJ_Size)sqrt)), i / (RJ_Size)sqrt, 0), Vector3_Zero, Vector3_One);
+    //     check(Renderer_ComponentCreate(test.batch, test.entities[i]));
+    // }
 
-    result = Entity_Initialize(TEST_OBJECT_COUNT);
-    if (result != RJ_OK)
-    {
-        RJ_DebugError(result, "Failed to initialize entity system");
-    }
+    player.entity = Entity_Create(Vector3_Zero, Vector3_Zero, Vector3_One);
+    player.camSens = PLAYER_SENSITIVITY;
+    player.speed = PLAYER_SPEED;
+    player.camera = RendererCamera_Default;
 
-    Input_Initialize(&window);
-
-    result = Renderer_Initialize(&window, 4);
-    if (result != RJ_OK)
-    {
-        RJ_DebugError(result, "Failed to initialize renderer");
-    }
-
-    result = Renderer_ConfigureShaders(scl("shaders/vertex.glsl"), scl("shaders/fragment.glsl"));
-    if (result != RJ_OK)
-    {
-        RJ_DebugError(result, "Failed to configure shaders");
-    }
-
-    TEST.camera.cam.position = Vector3_New(0.0f, 0.0f, -10.0f);
-    TEST.camera.cam.rotation = Vector3_New(0.0f, 90.0f, 0.0f);
-    TEST.camera.cam.size = 10.0f;
-    TEST.camera.cam.nearClipPlane = 0.01f;
-    TEST.camera.cam.farClipPlane = 1000.0f;
-    TEST.camera.cam.isPerspective = false;
-    TEST.camera.speed = 0.0025f;
-
-    Renderer_SetCamera(&TEST.camera.cam);
-
-    RendererBatch markBatch = 0;
-    result = Renderer_BatchCreate(&markBatch, scl("models/Mark.mdl"), NULL, 1);
-    if (result != RJ_OK)
-    {
-        RJ_DebugError(result, "Failed to create mark batch");
-    }
-
-    RendererBatch testBatch = 0;
-    result = Renderer_BatchCreate(&testBatch, scl("models/Test.mdl"), NULL, TEST_OBJECT_COUNT - 1);
-    if (result != RJ_OK)
-    {
-        RJ_DebugError(result, "Failed to create test batch");
-    }
-
-    TEST.mark = Entity_Create(Vector3_New(0.0f, 0.0f, -1.0f),
-                              Vector3_Zero,
-                              Vector3_One);
-
-    Renderer_ComponentCreate(markBatch, TEST.mark);
-
-    for (RJ_Size y = 0; y < TEST_GRID_Y; y++)
-    {
-        for (RJ_Size x = 0; x < TEST_GRID_X; x++)
-        {
-            Entity newNTT = Entity_Create(Vector3_New((-TEST_GRID_X / 2.0f) + (float)x + (y % 2 == 1 ? 0.5f : 0.0f),
-                                                      (-TEST_GRID_Y / 8.0f) + (float)y / 4.0f,
-                                                      0),
-                                          Vector3_Zero,
-                                          Vector3_One);
-
-            Renderer_ComponentCreate(testBatch, newNTT);
-        }
-    }
+    fetchPlayerTransform();
 }
 
 void App_Loop(float deltaTime)
 {
-    if (!Context_Update())
-    {
-        RJ_DebugInfo("Main window close input received");
-        RJ_Terminate(EXIT_SUCCESS, "Main window close input received");
-    }
-
     Input_Update();
 
-    if (Input_GetKey(InputKeyCode_F, InputState_Down))
+    if (!Context_Update())
     {
-        Context_ConfigureFullScreen(!window.fullScreen);
+        RJ_Terminate(RJ_OK, "Main window close input received");
     }
 
-    if (Input_GetKey(InputKeyCode_R, InputState_Down))
-    {
-        TEST.camera.cam.isPerspective = !TEST.camera.cam.isPerspective;
-    }
-
-    if (Input_GetKey(InputKeyCode_LeftArrow, InputState_Down))
-    {
-        TEST.camera.cam.position.x += 1.0f;
-    }
-    else if (Input_GetKey(InputKeyCode_RightArrow, InputState_Down))
-    {
-        TEST.camera.cam.position.x -= 1.0f;
-    }
-    else if (Input_GetKey(InputKeyCode_UpArrow, InputState_Down))
-    {
-        TEST.camera.cam.position.y += 1.0f;
-    }
-    else if (Input_GetKey(InputKeyCode_DownArrow, InputState_Down))
-    {
-        TEST.camera.cam.position.y -= 1.0f;
-    }
-
-    if (Input_GetMouseButton(InputMouseButtonCode_Left, InputState_Down | InputState_Pressed))
-    {
-        Vector2Int temp = Input_GetMousePositionDelta();
-        TEST.camera.cam.position = Vector3_Sum(TEST.camera.cam.position, Vector3_Scale(Vector3_New(temp.x, temp.y, 0.0f), TEST.camera.speed * TEST.camera.cam.size));
-    }
-
-    float newSize = TEST.camera.cam.size - Input_GetMouseScroll();
-    TEST.camera.cam.size = Maths_Clamp(newSize, 0.5f, 20.0f);
+    movement(deltaTime);
 
     Renderer_Update();
-    Vector3 mouseWorldPosition = Renderer_ScreenToWorldSpace(Input_GetMousePosition(), Maths_Abs(TEST.camera.cam.position.z));
-    Entity_SetPosition(TEST.mark, Vector3_New(Maths_Round(mouseWorldPosition.x), Maths_Round(mouseWorldPosition.y), 0.0f));
-
     Renderer_Render();
-
-    char titleBuffer[RJ_TEMP_BUFFER_SIZE] = {0};
-    snprintf(titleBuffer, sizeof(titleBuffer),
-             "Juliette | FPS: %6.2f | Frame Time: %6.5f ms | mouseWorldPosition: %6.2f, %6.2f, %6.2f",
-             1.0f / deltaTime,
-             deltaTime * 1000,
-             mouseWorldPosition.x,
-             mouseWorldPosition.y,
-             mouseWorldPosition.z);
-    Context_ConfigureTitle(scl(titleBuffer));
-
-    testFrameCount++;
-    testTimer += deltaTime;
-    if (testTimer > TEST_TIME)
-    {
-        RJ_DebugLog(true, "TEST", "Test time: %f, Average FPS: %f", testTimer, (float)testFrameCount / testTimer);
-    }
 }
 
 void App_Terminate(int exitCode, char *exitMessage)
@@ -196,13 +163,30 @@ void App_Terminate(int exitCode, char *exitMessage)
     (void)exitCode;
     (void)exitMessage;
 
+    Renderer_BatchDestroy(test.batch);
+
     if (Renderer_IsInitialized())
     {
         Renderer_Terminate();
     }
 
+    if (Input_IsInitialized())
+    {
+        Input_Terminate();
+    }
+
     if (Context_IsInitialized())
     {
         Context_Terminate();
+    }
+
+    if (Resource_IsInitialized())
+    {
+        Resource_Terminate();
+    }
+
+    if (Entity_IsInitialized())
+    {
+        Entity_Terminate();
     }
 }
