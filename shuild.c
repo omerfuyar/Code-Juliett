@@ -122,7 +122,7 @@ int main(int argc, char **argv)
     {
         SHU_CompilerAddFlags(SHUM_FLAGS_DEBUG SHUM_FLAGS_OPTIMIZATION_DEBUG SHUM_FLAGS_WARNING_ERROR);
         SHU_CompilerAddFlags(SHUM_FLAGS_WARNING_HIGH);
-        SHU_CompilerAddFlags("-Wno-format-nonliteral -Wno-unused-function -Wno-missing-declarations");
+        SHU_CompilerAddFlags("-Wno-gnu-zero-variadic-macro-arguments -Wno-format-nonliteral -Wno-unused-function -Wno-missing-declarations");
 
         if (SHU_CompilerGetIdentifier() == SHUM_COMPILER_CLANG)
         {
@@ -189,7 +189,7 @@ int main(int argc, char **argv)
 #endif
 
     snprintf(strBuffer, SHUC_MAX_STRING_SIZE, "build/%s/%s/", isDynamic ? "dynamic" : "static", buildName);
-    SHU_ModuleCompile(strBuffer, SHUM_MODULE_EXECUTABLE);
+    SHU_ModuleCompile(strBuffer, SHUModuleType_Executable);
 
     snprintf(strBuffer, SHUC_MAX_STRING_SIZE, "build/%s/%s/resources/", isDynamic ? "dynamic" : "static", buildName);
     SHU_UtilCopyFile("resources/", strBuffer);
